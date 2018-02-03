@@ -1,7 +1,7 @@
 // =============================================================================
-// VIZA654/CSCE646 at Texas A&M University
-// Homework 5
-// Filters with non-stationary kernels
+// VIZA656/CSCE647 at Texas A&M University
+// Homework 1
+// 3D to 2D Raster conversion
 // output files are generated in the same folder
 // =============================================================================
 
@@ -29,14 +29,88 @@
 
 #define maximum(x, y, z) ((x) > (y)? ((x) > (z)? (x) : (z)) : ((y) > (z)? (y) : (z)))
 #define minimum(x, y, z) ((x) < (y)? ((x) < (z)? (x) : (z)) : ((y) < (z)? (y) : (z)))
-
+#define SX 100
+#define SY 100
 
 using namespace std;
 // =============================================================================
 // These variables will store the input ppm image's width, height, and color
 // =============================================================================
-int width, height, maxColorValue, magicNo;
+int width=750, height=750, maxColorValue=255, magicNo;
 unsigned char *pixmapOrig, *pixmapComputed;
+
+class point
+{
+  public:
+  double x;
+  double y;
+  double z;
+
+  point(double xVal, double yVal, double zVal)
+  {
+    x=xVal, y=yVal, z=zVal;
+  }
+};
+
+
+class vector
+{  
+  public:
+  double x;
+  double y;
+  double z;
+
+  vector(double xVal, double yVal, double zVal)
+  {
+    x=xVal, y=yVal, z=zVal;
+  }
+  
+  double length()
+  {
+    return pow((pow(x,2)+pow(y,2)+pow(z,2)),0.5);
+  }
+  
+  vector* operator * (const vector& vObj)
+  {
+    double xVal = y*vObj.z-z*vObj.y;
+    double yVal = z*vObj.x-x*vObj.z;
+    double zVal = x*vObj.y-y*vObj.x;
+    return new vector(xVal, yVal, zVal);
+  }
+
+  double dotProduct(const vector& vObj)
+  {
+    return x*vObj.x+y*vObj.y+z*vObj.z;
+  }
+  
+  void scalarMultiply(double val)
+  {
+    x=x*val, y=y*val, z=z*val;
+  } 
+  
+  vector* operator + (const vector& vObj)
+  {
+    double xVal = x+vObj.x;
+    double yVal = y+vObj.y;
+    double zVal = z+vObj.z;
+    return new vector(xVal, yVal, zVal);
+  }
+  
+  vector* operator - (const vector& vObj)
+  {
+    double xVal = x-vObj.x;
+    double yVal = y-vObj.y;
+    double zVal = z-vObj.z;
+    return new vector(xVal, yVal, zVal);
+  }   
+};
+
+
+point* planeCorner, *planeCorner2;
+point* spheres[2];
+double radius[2];
+vector *n2, *n1, *n0, *planeNormal2;
+
 
 inline double mod(double x) 
 {
@@ -55,7 +129,7 @@ unsigned char* resizeArray(unsigned char* oldArray, long int oldSize, long int& 
 //Set red, green and blue in the new pixMap array to be written to the ppm file
 void setPixelColor(int y, int x, int red, int green, int blue)
 {
-  int i = (y * width + x) * 3; 
+  int i = ((height-y-1) * width + x) * 3; 
   pixmapComputed[i++] = red;
   pixmapComputed[i++] = green;
   pixmapComputed[i] = blue;
@@ -104,6 +178,7 @@ static void init(void)
 
 //****************************************************************************************************************************
 //**********************Functions to read data from ppm file******************************************************************
+//**********************Not used in this project******************************************************************************
 //****************************************************************************************************************************
 void parseCommentLine(long int& index, unsigned char* fileBuffer, long int numOfCharacters)
 {
@@ -376,52 +451,95 @@ void generatePPMFile()
 
 
 //*****************************************************************************************************
-//*************************************Stationary filter functions*************************************
+//*************************************Rasterization functions*****************************************
 //*****************************************************************************************************
 
-void applyTransformation()
+bool isInside(point* center, double radius, point* testPoint)
 {
-  
-}
-
-
-void initOutputPixMap()
-{
-  for(int y=0;y<height;y++)
+  if ((pow((testPoint->x - center->x),2) + pow((testPoint->y - center->y),2) + pow((testPoint->z - center->z),2) - pow (radius,2)) <= 0)
   {
-    for(int x=0;x<width;x++)
-    {
-      int i=(y*width+x)*3;
-      pixmapComputed[i++]=0;
-      pixmapComputed[i++]=0;
-      pixmapComputed[i]=0;
-    }
+    return true;
   }
+  return false;
 }
 
-void swap(int& a, int& b)
+bool isInsidePlane(point* center, vector* n2, point* testPoint)
 {
-  int t;
-  t=a;
-  a=b;
-  b=t;
+  vector* test = new vector(testPoint->x - center->x, testPoint->y - center->y, testPoint->z - center->z);
+  if (n2->dotProduct(*test) <= 0)
+    return true;
+  return false;
 }
 
-void reconfigureInputPixMap()
+void initEnvironment()
 {
-  for(int y=0;y<height;y++)
+  n2 = new vector(0,1,1);
+  n2->scalarMultiply(((double)1)/n2->length());
+  vector* Vref = new vector(0, 10, 5);
+  Vref->scalarMultiply(((double)1)/Vref->length());
+  n0 = (*n2) * (*Vref);
+  n0->scalarMultiply(((double)1)/n0->length());
+  n1 = (*n2) * (*n0);
+  n1->scalarMultiply(((double)1)/n1->length());
+  planeCorner = new point(100,100,100);
+  spheres[0] = new point (80,40,160);
+  spheres[1] = new point (60,45,160);
+  radius[0]=10;
+  radius[1]=15;
+
+  planeNormal2 = new vector(0,-1,1);
+  planeNormal2->scalarMultiply(((double)1)/planeNormal2->length());
+  planeCorner2 = new point(0, 0, 100);
+}
+
+void applyRasterization()
+{
+  initEnvironment();
+  point* testPoint = new point(0,0,0);
+  for(int j=0;j<height;j++)
   {
-    for(int x=0;x<width;x++)
+    for(int i=0;i<width;i++)
     {
-      int i=(y*width+x)*3;
-      int old = ((height-y-1)*width+x)*3;
-      swap(pixmapOrig[i++],pixmapOrig[old++]);
-      swap(pixmapOrig[i++],pixmapOrig[old++]);
-      swap(pixmapOrig[i],pixmapOrig[old]);
+      double redChannel=0, greenChannel=0, blueChannel=0;
+      for(int m=0;m<4;m++)
+      {
+        for(int l=0;l<4;l++)
+        {
+          double x= i + (double)l/4 + ((double)rand() / (double)RAND_MAX)/4;
+	  double y= j + (double)m/4 + ((double)rand() / (double)RAND_MAX)/4;
+      	  testPoint->x = planeCorner->x + (n0->x)*SX*(x/width) + (n1->x)*SY*(y/height);
+          testPoint->y = planeCorner->y + (n0->y)*SX*(x/width) + (n1->y)*SY*(y/height);
+          testPoint->z = planeCorner->z + (n0->z)*SX*(x/width) + (n1->z)*SY*(y/height);
+          if (isInside(spheres[0], radius[0], testPoint))
+          {
+            redChannel += (80.0/(255.0*16.0));
+            greenChannel +=(90.0/(255.0*16.0));
+            blueChannel +=(40.0/(255.0*16.0));
+          }
+          else if (isInside(spheres[1], radius[1], testPoint))
+          {
+            redChannel += (65.0/(255.0*16.0));
+            greenChannel +=(75.0/(255.0*16.0));
+            blueChannel +=(25.0/(255.0*16.0));
+          }
+          else if (isInsidePlane(planeCorner2, planeNormal2, testPoint))
+          {
+            redChannel += (20.0/(255.0*16.0));
+            greenChannel +=(30.0/(255.0*16.0));
+            blueChannel +=(40.0/(255.0*16.0));            
+          }
+          else
+          {
+            redChannel += (20.0/(255.0*16.0));
+            greenChannel +=(70.0/(255.0*16.0));
+            blueChannel +=(50.0/(255.0*16.0));
+          }
+        }
+      }
+      setPixelColor(j,i,(int)(redChannel*255.0),(int)(greenChannel*255.0),(int)(blueChannel*255.0));
     }
-  }
+  }       
 }
-
 
 // =============================================================================
 // main() Program Entry
@@ -429,15 +547,9 @@ void reconfigureInputPixMap()
 int main(int argc, char *argv[])
 {
   char inputPPMFile[100], controlPPMFile[100];
-  cout<<"Enter the ppm file to be manipulated\n";
-  cin>>inputPPMFile;
-  readPPMFile(inputPPMFile);
   pixmapComputed = new unsigned char[width * height * 3];
-  initOutputPixMap();
-  reconfigureInputPixMap();
 
-
-  applyTransformation();
+  applyRasterization();
 
   generatePPMFile();
 
