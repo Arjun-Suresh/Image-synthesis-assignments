@@ -107,7 +107,7 @@ class vector
 
 
 point* planeCorner, *planeCorner2;
-point* spheres[2];
+point* spheres[2], *cylinder;
 double radius[2];
 vector *n2, *n1, *n0, *planeNormal2;
 
@@ -471,6 +471,15 @@ bool isInsidePlane(point* center, vector* n2, point* testPoint)
   return false;
 }
 
+bool insideCylinder(point* center, point* testPoint)
+{
+  vector* test = new vector(testPoint->x - center->x, testPoint->y - center->y, testPoint->z - center->z);
+  double result = 15* pow((n0->dotProduct(*test)/(double)SX),2)+10* pow((n1->dotProduct(*test)/(double)SY),2) - 1;
+  if (result<=0)
+    return true;
+  return false;
+}
+
 void initEnvironment()
 {
   n2 = new vector(0,1,1);
@@ -486,6 +495,8 @@ void initEnvironment()
   spheres[1] = new point (60,45,160);
   radius[0]=10;
   radius[1]=15;
+
+  cylinder = new point (50, 25, 60);
 
   planeNormal2 = new vector(0,-1,1);
   planeNormal2->scalarMultiply(((double)1)/planeNormal2->length());
@@ -510,7 +521,13 @@ void applyRasterization()
       	  testPoint->x = planeCorner->x + (n0->x)*SX*(x/width) + (n1->x)*SY*(y/height);
           testPoint->y = planeCorner->y + (n0->y)*SX*(x/width) + (n1->y)*SY*(y/height);
           testPoint->z = planeCorner->z + (n0->z)*SX*(x/width) + (n1->z)*SY*(y/height);
-          if (isInside(spheres[0], radius[0], testPoint))
+          if (insideCylinder(cylinder, testPoint))
+          {
+            redChannel += (120.0/(255.0*16.0));
+            greenChannel +=(65.0/(255.0*16.0));
+            blueChannel +=(25.0/(255.0*16.0));
+          }
+          else if (isInside(spheres[0], radius[0], testPoint))
           {
             redChannel += (80.0/(255.0*16.0));
             greenChannel +=(90.0/(255.0*16.0));
