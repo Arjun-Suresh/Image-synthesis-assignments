@@ -1,7 +1,7 @@
 // =============================================================================
 // VIZA656/CSCE647 at Texas A&M University
-// Homework 1
-// 3D to 2D Raster conversion
+// Homework 2
+// Basic camera
 // output files are generated in the same folder
 // =============================================================================
 
@@ -483,31 +483,65 @@ bool planeIntersection(point* corner, vector* normal, vector* npe, double& t)
   return true;
 }
 
+void clamp(double& value, double min, double max)
+{
+  if (value<min)
+    value=min;
+  if (value>max)
+    value=max;
+}
+
 void initEnvironment()
 {
-  n2 = new vector(0,0,-1);
+  double cameraTiltedAngle=0;
+  cout<<"Enter option:\n1. Control view direction\n2. Change field of view\n";
+  int option;
+  cin>>option;
+  if (option == 1)
+  {
+    pc = new point(250,250,100);
+    double xe, ye;
+    cout<<"Enter x and y positions of the eye (for best results please keep the range for both values as 220-280)\n";
+    cin>>xe>>ye;
+    d=50;
+    clamp(xe,220,280);
+    clamp(ye,220,280);
+    double ze = pc->z + pow((pow(d,2) - pow((pc->x - xe),2) - pow((pc->y - ye),2)),0.5);
+    pe = new point(xe,ye,ze);
+    n2 = new vector((pc->x - pe->x)/d,(pc->y - pe->y)/d,(pc->z - pe->z)/d);
+    cout<<"Enter the angle in degrees by which you want to rotate the camera around z axis by:\n";
+    cin>>cameraTiltedAngle;
+    cameraTiltedAngle = (cameraTiltedAngle * 3.14)/180;
+  }
+  else
+  {
+    cout<<"Enter distance between eye and view plane (for best results please keep the range as 10-100)\n";
+    cin>>d;
+    n2 = new vector(0,0,-1);
+    pe = new point (250, 250, 150);
+    pc = new point (pe->x+(n2->x)*d,pe->y+(n2->y)*d,pe->z+(n2->z)*d);
+  }
   vector* Vref = new vector(0, 1, 2);
+  Vref->x = (Vref->x*cos(cameraTiltedAngle))-(Vref->y*sin(cameraTiltedAngle));
+  Vref->y = (Vref->x*sin(cameraTiltedAngle))+(Vref->y*cos(cameraTiltedAngle));
   Vref->scalarMultiply(((double)1)/Vref->length());
+  
   n0 = (*n2) * (*Vref);
   n0->scalarMultiply(((double)1)/n0->length());
   n1 = (*n0) * (*n2);
   n1->scalarMultiply(((double)1)/n1->length());
-  pe = new point (250, 250, 150);
-  d = 50;
-  pc = new point (pe->x+(n2->x)*d,pe->y+(n2->y)*d,pe->z+(n2->z)*d);
   p0 = new point (pc->x-((SX/2)*(n0->x))-((SY/2)*(n1->x)),pc->y-((SX/2)*(n0->y))-((SY/2)*(n1->y)),pc->z-((SX/2)*(n0->z))-((SY/2)*(n1->z)));
   spheres[0] = new point (325,325,-25);
   spheres[1] = new point (225,250,-50);
   radius[0]=50;
   radius[1]=75;
 
-  planeNormal = new vector(-0.996,0,-0.087);  //Rotated the normal of view plane by 95 degrees around y axis
+  planeNormal = new vector(-0.996,0,-0.087);  //The external plane's normal is the normal of view plane by 95 degrees around y axis
   planeCorner = new point(250, 250, -100);
 }
 
 void applyRasterization()
 {
-  initEnvironment();
   point* testPoint = new point(0,0,0);
   for(int j=0;j<height;j++)
   {
@@ -586,6 +620,8 @@ int main(int argc, char *argv[])
   char inputPPMFile[100], controlPPMFile[100];
   pixmapComputed = new unsigned char[width * height * 3];
 
+  initEnvironment();
+
   applyRasterization();
 
   generatePPMFile();
@@ -595,7 +631,7 @@ int main(int argc, char *argv[])
   glutInitWindowPosition(100, 100); // Where the window will display on-screen.
   glutInitWindowSize(width, height);
   glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
-  glutCreateWindow("Homework Four");
+  glutCreateWindow("Homework Two");
   init();
   glutReshapeFunc(windowResize);
   glutDisplayFunc(windowDisplay);
