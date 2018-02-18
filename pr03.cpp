@@ -33,9 +33,10 @@
 #define SY 100
 
 #define SPOTLIGHTMIN 0.707
-#define MIN -0.5
-#define MAX 1
-
+#define MINANGLE 0.0
+#define MAXANGLE 1.0
+#define MINREFLECTION 0.707
+#define MAXREFLECTION 1.0
 using namespace std;
 // =============================================================================
 // These variables will store the input ppm image's width, height, and color
@@ -111,22 +112,21 @@ class vector
 
 class color
 {
-  long int red;
-  long int green;
-  long int blue;
-  long int alpha;
   public:
-    color(long int r, long int g, long int b, long int a)
+    double red;
+    double green;
+    double blue;
+    double alpha;
+    color(double r, double g, double b, double a)
     {
       red=r, green=g, blue=b, alpha=a;
     }
     
-    void multiply(long int t)
+    void multiply(double t)
     {
       red = red*t;
       green = green*t;
       blue = blue*t;
-      alpha = alpha*t;
     }
     
     void multiplyColor(color& input)
@@ -145,11 +145,17 @@ class color
       alpha = alpha+input.alpha;
     }
     
-    void getResult(int& rVal, int &gVal, int& bVal)
+    void getResult(double& rVal, double& gVal, double& bVal)
     {
-      rVal=(int)(((double)red/(double)alpha)*255.0);
-      gVal=(int)(((double)green/(double)alpha)*255.0);
-      bVal=(int)(((double)blue/(double)alpha)*255.0);
+      rVal=red/alpha;
+      gVal=green/alpha;
+      bVal=blue/alpha;
+      if (gVal>1)
+        gVal=1;
+      if (rVal>1)
+        rVal=1;
+      if (bVal>1)
+        bVal=1;
     }
 };
 
@@ -561,22 +567,92 @@ void initEnvironment()
   radius[1]=75;
 
   planeNormal = new vector(-0.996,0,-0.087);  //The external plane's normal is the normal of view plane by 95 degrees around y axis
-  planeCorner = new point(500, 250, -100);
+  planeCorner = new point(325, 325, -100);
 }
 
 void initLight(int option)
 {
   if(option == 1 || option == 3)
-    lightPosition = new point(0,500,0);
+    lightPosition = new point(300,300,50);
   if(option>1)
+  {
     lightDirection = new vector(275,-220,-30);
+    lightDirection->scalarMultiply(1.0/lightDirection->length());
+  }
 }
 
-void getColor(color& surfaceColor, color& lightColor, vector* planeNormal, point& hitPoint, int option)
+double clamp(double val)
 {
+  if (val<0)
+    return 0;
+  if (val>1)
+    return 1;
+  return val;
+}
+
+void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, point& hitPoint, int option)
+{
+  double d, s, b;
   if(option == 3)
   {
+    vector lightVector(hitPoint.x-lightPosition->x,hitPoint.y-lightPosition->y,hitPoint.z-lightPosition->z);
+    lightVector.scalarMultiply(1.0/lightVector.length());
+    if (lightVector.dotProduct(*lightDirection)<SPOTLIGHTMIN)
+      d=0,s=0,b=0;
+    else
+    {
+      lightVector.scalarMultiply(-1);
+
+      double res = lightVector.dotProduct(nh);
+      d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
+
+      vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
+      reflection.scalarMultiply(-1.0/reflection.length());
+      s=clamp((npe.dotProduct(reflection)-MINANGLE)/(MAXANGLE-MINANGLE));
+        
+      double outline = 1.0 + npe.dotProduct(nh);
+      b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
+    }
+  }
+  else if (option == 2)
+  {
+    vector lightVector(-lightDirection->x, -lightDirection->y, -lightDirection->z);
+    double res = lightVector.dotProduct(nh);
+    d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
+ 
+    vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
+    reflection.scalarMultiply(-1.0/reflection.length());
+    s=clamp((npe.dotProduct(reflection)-MINANGLE)/(MAXANGLE-MINANGLE));
+      
+    double outline = 1.0 + npe.dotProduct(nh);
+    b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
+  }
+  
+  else
+  {
+    vector lightVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
+    lightVector.scalarMultiply(1.0/lightVector.length());
     
+    double res = lightVector.dotProduct(nh);
+    d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
+
+    vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
+    reflection.scalarMultiply(-1.0/reflection.length());
+    s=clamp((npe.dotProduct(reflection)-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
+
+    double outline = 1.0 + npe.dotProduct(nh);
+    b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
+  }
+  color diffuse = surfaceColor, specular = surfaceColor, border = surfaceColor;
+  diffuse.multiplyColor(lightColor);
+  diffuse.multiply(5*d);
+  specular.multiplyColor(lightColor);
+  specular.multiply(6*s);
+  border.multiplyColor(lightColor);
+  border.multiply(b);
+  surfaceColor.addColor(diffuse);
+  surfaceColor.addColor(specular);
+  surfaceColor.addColor(border);   
 }
 
 void applyRasterization()
@@ -586,15 +662,15 @@ void applyRasterization()
   cin>>lightOption;
   initLight(lightOption);
   point* testPoint = new point(0,0,0);
-  color lightColor(100,40,20,100);
+  color lightColor(10,10,10,10);
   for(int j=0;j<heightComputed;j++)
   {
     for(int i=0;i<widthComputed;i++)
     {
-      int red = pixMapOrig[((j*widthComputed)+i)*3];
-      int green = pixMapOrig[(((j*widthComputed)+i)*3)+1];
-      int blue = pixMapOrig[(((j*widthComputed)+i)*3)+2];
-      color surfaceColor(red, green, blue, maximum(red,green,blue));
+      int r = pixmapOrig[((((heightComputed-j-1)%height)*width)+(i%width))*3];
+      int g = pixmapOrig[(((((heightComputed-j-1)%height)*width)+(i%width))*3)+1];
+      int b = pixmapOrig[(((((heightComputed-j-1)%height)*width)+(i%width))*3)+2];
+      double rChannel=0, gChannel=0, bChannel=0;
       for(int m=0;m<4;m++)
       {
         for(int l=0;l<4;l++)
@@ -610,16 +686,13 @@ void applyRasterization()
           double tMin = 99999;
           bool changedValue = false;
           double t;
-
-
+          color ambient(r,g,b,maximum(r,g,b));
+          int shape=-1;
           if (sphereIntersection(spheres[0], radius[0], npe, t))
           {
             if (t<tMin || !changedValue)
             {
-              point hitPoint(pe->x+(npe->x*t),pe->y+(npe->y*t),pe->z+(npe->z*t));
-              vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
-              nh.scalarMultiply(1.0/nh.length());
-              getColor(surfaceColor, lightColor, nh, hitPoint, option);
+              shape=0;
               tMin=t;
               changedValue=true;
             }
@@ -628,10 +701,7 @@ void applyRasterization()
           {
             if (t<tMin || !changedValue)
             {
-              point hitPoint(pe->x+(npe->x*t),pe->y+(npe->y*t),pe->z+(npe->z*t));
-              vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
-              nh.scalarMultiply(1.0/nh.length());
-              getColor(surfaceColor, lightColor, nh, hitPoint, option);
+              shape=1;
               tMin=t;
               changedValue=true;
             }
@@ -640,18 +710,45 @@ void applyRasterization()
           {
             if ((t<tMin || !changedValue) && fieldLength < t)
             {
-              point hitPoint(pe->x+(npe->x*t),pe->y+(npe->y*t),pe->z+(npe->z*t));
-              getColor(surfaceColor, lightColor, planeNormal, hitPoint, option); 
+     	      shape=2;
               tMin=t;
               changedValue=true;
             }
           }
+       
+          if (shape == 0)
+          {
+            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
+            vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
+            nh.scalarMultiply(1.0/nh.length());
+            getColor(ambient, lightColor, nh, *npe, hitPoint, lightOption);
+          }
+          if (shape == 1)
+          {
+            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
+            vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
+            nh.scalarMultiply(1.0/nh.length());
+            getColor(ambient, lightColor, nh, *npe, hitPoint, lightOption);
+          }
+          if (shape == 2)
+          {
+            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
+            getColor(ambient, lightColor, *planeNormal, *npe, hitPoint, lightOption); 
+          }
           delete npe;
+          double red, green, blue;
+          ambient.getResult(red, green, blue);
+          rChannel+=red;
+          gChannel+=green;
+          bChannel+=blue;
         }
       }
-      int red, green, blue;
-      surfaceColor.getResult(red, green, blue);
-      setPixelColor(j,i,red,green,blue);
+      int rVal, gVal, bVal;
+      rVal = (int)((rChannel/16.0)*255.0);
+      gVal = (int)((gChannel/16.0)*255.0);
+      bVal = (int)((bChannel/16.0)*255.0);
+      cout<<i<<" "<<j<<" "<<rVal<<" "<<gVal<<" "<<bVal<<endl;
+      setPixelColor(j,i,rVal,gVal,bVal);
     }
   }       
 }
@@ -665,7 +762,6 @@ int main(int argc, char *argv[])
   cout<<"Enter the goal image ppm file name\n";
   cin>>inputPPMFile;
   readPPMFile(inputPPMFile);
-
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
 
   initEnvironment();
