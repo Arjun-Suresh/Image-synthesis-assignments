@@ -7,4 +7,4 @@ The cpp file runs using c++ and employs freeglut for creating a window. In order
 6. Run ./configure, make and sudo make install commands on the extracted folder.
 7. The compiled binaries need to be copied to /usr/lib. Run cp /usr/local/lib/* /usr/lib
 
-Now, the environment is set up in the system and this application can be run. It creates the output ppm files in the same location as the executable. In my submission, I am attaching this readme, the source code .cpp file, makefile and the generated ppm file.
+Now, the environment is set up in the system and this application can be run. It creates the output ppm files in the same location as the executable. In my submission, I am attaching this readme, the source code .cpp file, makefile, goal image file and the generated ppm file.

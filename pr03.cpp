@@ -37,6 +37,9 @@
 #define MAXANGLE 1.0
 #define MINREFLECTION 0.707
 #define MAXREFLECTION 1.0
+#define KD 5
+#define KS 20
+#define KB 2
 using namespace std;
 // =============================================================================
 // These variables will store the input ppm image's width, height, and color
@@ -573,10 +576,10 @@ void initEnvironment()
 void initLight(int option)
 {
   if(option == 1 || option == 3)
-    lightPosition = new point(300,300,50);
+    lightPosition = new point(225,250,50);
   if(option>1)
   {
-    lightDirection = new vector(275,-220,-30);
+    lightDirection = new vector(50,30,-25);
     lightDirection->scalarMultiply(1.0/lightDirection->length());
   }
 }
@@ -598,7 +601,7 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
     vector lightVector(hitPoint.x-lightPosition->x,hitPoint.y-lightPosition->y,hitPoint.z-lightPosition->z);
     lightVector.scalarMultiply(1.0/lightVector.length());
     if (lightVector.dotProduct(*lightDirection)<SPOTLIGHTMIN)
-      d=0,s=0,b=0;
+      return;
     else
     {
       lightVector.scalarMultiply(-1);
@@ -645,11 +648,11 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
   }
   color diffuse = surfaceColor, specular = surfaceColor, border = surfaceColor;
   diffuse.multiplyColor(lightColor);
-  diffuse.multiply(5*d);
+  diffuse.multiply(KD*d);
   specular.multiplyColor(lightColor);
-  specular.multiply(6*s);
+  specular.multiply(KS*s);
   border.multiplyColor(lightColor);
-  border.multiply(b);
+  border.multiply(KB*b);
   surfaceColor.addColor(diffuse);
   surfaceColor.addColor(specular);
   surfaceColor.addColor(border);   
@@ -732,22 +735,32 @@ void applyRasterization()
           }
           if (shape == 2)
           {
+            color planeColor(20,130,40,255);
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            getColor(ambient, lightColor, *planeNormal, *npe, hitPoint, lightOption); 
+            getColor(planeColor, lightColor, *planeNormal, *npe, hitPoint, lightOption); 
+            ambient=planeColor;
           }
           delete npe;
-          double red, green, blue;
-          ambient.getResult(red, green, blue);
-          rChannel+=red;
-          gChannel+=green;
-          bChannel+=blue;
+          if (shape!=-1)
+          {
+            double red, green, blue;
+            ambient.getResult(red, green, blue);
+            rChannel+=red;
+            gChannel+=green;
+            bChannel+=blue;
+          }
+          else
+          {
+            rChannel+=150.0/255.0;
+            gChannel+=100.0/255.0;
+            bChannel+=180.0/255.0;
+          }
         }
       }
       int rVal, gVal, bVal;
       rVal = (int)((rChannel/16.0)*255.0);
       gVal = (int)((gChannel/16.0)*255.0);
       bVal = (int)((bChannel/16.0)*255.0);
-      cout<<i<<" "<<j<<" "<<rVal<<" "<<gVal<<" "<<bVal<<endl;
       setPixelColor(j,i,rVal,gVal,bVal);
     }
   }       
