@@ -38,8 +38,8 @@
 #define MINREFLECTION 0.707
 #define MAXREFLECTION 1.0
 #define KD 5
-#define KS 20
-#define KB 2
+#define KS 5
+#define KB 1
 using namespace std;
 // =============================================================================
 // These variables will store the input ppm image's width, height, and color
@@ -613,7 +613,7 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
       reflection.scalarMultiply(-1.0/reflection.length());
       s=clamp((npe.dotProduct(reflection)-MINANGLE)/(MAXANGLE-MINANGLE));
         
-      double outline = 1.0 + npe.dotProduct(nh);
+      double outline = -1.0 * npe.dotProduct(nh);
       b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
     }
   }
@@ -627,7 +627,7 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
     reflection.scalarMultiply(-1.0/reflection.length());
     s=clamp((npe.dotProduct(reflection)-MINANGLE)/(MAXANGLE-MINANGLE));
       
-    double outline = 1.0 + npe.dotProduct(nh);
+    double outline = -1.0 * npe.dotProduct(nh);
     b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
   }
   
@@ -643,7 +643,7 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
     reflection.scalarMultiply(-1.0/reflection.length());
     s=clamp((npe.dotProduct(reflection)-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
 
-    double outline = 1.0 + npe.dotProduct(nh);
+    double outline = -1.0 * npe.dotProduct(nh);
     b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
   }
   color diffuse = surfaceColor, specular = surfaceColor, border = surfaceColor;
