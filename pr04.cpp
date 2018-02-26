@@ -35,7 +35,7 @@
 #define SPOTLIGHTMIN 0.707
 #define MINANGLE 0.0
 #define MAXANGLE 1.0
-#define MINREFLECTION 0.707
+#define MINREFLECTION 0.9
 #define MAXREFLECTION 1.0
 #define KD 5
 #define KS 10
@@ -587,10 +587,10 @@ void initEnvironment()
 void initLight(int option)
 {
   if(option == 1 || option == 3)
-    lightPosition = new point(100,250,50);
+    lightPosition = new point(100,250,10);
   if(option>1)
   {
-    lightDirection = new vector(50,30,-25);
+    lightDirection = new vector(175,40,-50);
     lightDirection->scalarMultiply(1.0/lightDirection->length());
   }
 }
@@ -622,7 +622,7 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
 
       vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
       reflection.scalarMultiply(-1.0/reflection.length());
-      s=clamp((npe.dotProduct(reflection)-MINANGLE)/(MAXANGLE-MINANGLE));
+      s=clamp((npe.dotProduct(reflection)-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
         
       double outline = -1.0 * npe.dotProduct(nh);
       b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
@@ -631,12 +631,41 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
   else if (option == 2)
   {
     vector lightVector(-lightDirection->x, -lightDirection->y, -lightDirection->z);
+
+    double t;
+    bool shadow=false;
+    if (sphereIntersection(spheres[0], &hitPoint, radius[0], &lightVector, t))
+    {
+      if (t>0)
+        shadow=true;
+    }
+    if (!shadow && sphereIntersection(spheres[1], &hitPoint, radius[1], &lightVector, t))
+    {
+      if (t>0)
+        shadow=true;
+    }
+    if (!shadow && planeIntersection(planeCorner, &hitPoint, planeNormal, &lightVector, t))
+    {
+      if (t>0)
+        shadow=true;
+    }
+    
+    if (shadow)
+      return;
+
     double res = lightVector.dotProduct(nh);
-    d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
+    if (res<0.2)
+      d=0;
+    else
+      d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
  
     vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
     reflection.scalarMultiply(-1.0/reflection.length());
-    s=clamp((npe.dotProduct(reflection)-MINANGLE)/(MAXANGLE-MINANGLE));
+    double reflectValue = npe.dotProduct(reflection);
+    if (reflectValue < 0.95)
+      s=0;
+    else
+    s=clamp((reflectValue-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
       
     double outline = -1.0 * npe.dotProduct(nh);
     b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
@@ -677,7 +706,7 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
     vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
     reflection.scalarMultiply(-1.0/reflection.length());
     double reflectValue = npe.dotProduct(reflection);
-    if (reflectValue < 0.8)
+    if (reflectValue < 0.95)
       s=0;
     else
       s=clamp((reflectValue-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
