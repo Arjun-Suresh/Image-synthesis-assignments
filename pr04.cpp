@@ -32,6 +32,9 @@
 #define SX 100
 #define SY 100
 
+#define SLX 20
+#define SLY 20
+
 #define SPOTLIGHTMIN 0.707
 #define MINANGLE 0.0
 #define MAXANGLE 1.0
@@ -183,6 +186,8 @@ vector *planeNormal; //Normal of an external plane which is rendered
 
 point* lightPosition; //Only for point and spot light
 vector* lightDirection; //Only for spot and direction light
+point* lightCorner;
+vector* lightN0, *lightN1; //For area light
 
 inline double mod(double x) 
 {
@@ -576,7 +581,7 @@ void initEnvironment()
   n1->scalarMultiply(((double)1)/n1->length());
   p0 = new point (pc->x-((SX/2)*(n0->x))-((SY/2)*(n1->x)),pc->y-((SX/2)*(n0->y))-((SY/2)*(n1->y)),pc->z-((SX/2)*(n0->z))-((SY/2)*(n1->z)));
   spheres[0] = new point (325,325,-25);
-  spheres[1] = new point (225,250,-50);
+  spheres[1] = new point (225,280,-155);
   radius[0]=50;
   radius[1]=75;
 
@@ -586,12 +591,21 @@ void initEnvironment()
 
 void initLight(int option)
 {
-  if(option == 1 || option == 3)
-    lightPosition = new point(100,250,30);
-  if(option>1)
+  if (option == 4)
   {
-    lightDirection = new vector(175,40,-70);
-    lightDirection->scalarMultiply(1.0/lightDirection->length());
+    lightCorner = new point(150,270,55);
+    lightN0 = new vector(1,0,0);
+    lightN1 = new vector(0,1,0);
+  }
+  else
+  {
+    if(option == 1 || option == 3)
+      lightPosition = new point(100,250,30);
+    if(option>1)
+    {
+      lightDirection = new vector(175,40,-70);
+      lightDirection->scalarMultiply(1.0/lightDirection->length());
+    }
   }
 }
 
@@ -604,7 +618,7 @@ double clamp(double val)
   return val;
 }
 
-void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, point& hitPoint, int option)
+void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vector& nh, vector& npe, point& hitPoint, int option)
 {
   double d, s, b;
   if(option == 3)
@@ -757,10 +771,11 @@ void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, p
 void applyRasterization()
 {
   int lightOption;
-  cout<<"Enter\n1. Point Light\n2. Direction light\n3. Spot light\n";
+  cout<<"Enter\n1. Point Light\n2. Direction light\n3. Spot light\n4. Area light";
   cin>>lightOption;
   initLight(lightOption);
   point* testPoint = new point(0,0,0);
+  point* lightPos = new point(0,0,0);
   color lightColor(10,10,10,10);
   for(int j=0;j<heightComputed;j++)
   {
@@ -770,13 +785,15 @@ void applyRasterization()
       //int g = pixmapOrig[(((((heightComputed-j-1)%height)*width)+(i%width))*3)+1];
       //int b = pixmapOrig[(((((heightComputed-j-1)%height)*width)+(i%width))*3)+2];
       double rChannel=0, gChannel=0, bChannel=0;
+      double randomValX = ((double)rand() / (double)RAND_MAX)/4;
+      double randomValY = ((double)rand() / (double)RAND_MAX)/4;
       for(int m=0;m<4;m++)
       {
         for(int l=0;l<4;l++)
         {
           cout<<i<<" "<<j<<endl;
-          double x= i + (double)l/4 + ((double)rand() / (double)RAND_MAX)/4;
-	  double y= j + (double)m/4 + ((double)rand() / (double)RAND_MAX)/4;
+          double x= i + (double)l/4 + randomValX;
+	  double y= j + (double)m/4 + randomValY;
       	  testPoint->x = p0->x + (n0->x)*SX*(x/widthComputed) + (n1->x)*SY*(y/heightComputed);
           testPoint->y = p0->y + (n0->y)*SX*(x/widthComputed) + (n1->y)*SY*(y/heightComputed);
           testPoint->z = p0->z + (n0->z)*SX*(x/widthComputed) + (n1->z)*SY*(y/heightComputed);
@@ -788,6 +805,19 @@ void applyRasterization()
           double t;
           color ambient;
           int shape=-1;
+     
+          if (lightOption == 4)
+          {
+            lightPos->x = lightCorner->x + (lightN0->x)*SLX*((l+randomValX)/4.0) + (lightN1->x)*SLY*((m+randomValY)/4.0);
+            lightPos->y = lightCorner->x + (lightN0->y)*SLX*((l+randomValX)/4.0) + (lightN1->y)*SLY*((m+randomValY)/4.0);
+            lightPos->z = lightCorner->z + (lightN0->z)*SLX*((l+randomValX)/4.0) + (lightN1->z)*SLY*((m+randomValY)/4.0);
+          }
+          else
+          {
+            lightPos->x=lightPosition->x;
+            lightPos->y=lightPosition->y;
+            lightPos->z=lightPosition->z;
+          }
           if (sphereIntersection(spheres[0], pe, radius[0], npe, t))
           {
             if (t<tMin || !changedValue)
@@ -821,7 +851,7 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
             nh.scalarMultiply(1.0/nh.length());
-            getColor(ambient, lightColor, nh, *npe, hitPoint, lightOption);
+            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint, lightOption);
           }
           if (shape == 1)
           {
@@ -829,13 +859,13 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
             nh.scalarMultiply(1.0/nh.length());
-            getColor(ambient, lightColor, nh, *npe, hitPoint, lightOption);
+            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint, lightOption);
           }
           if (shape == 2)
           {
             color planeColor(20,130,40,255);
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            getColor(planeColor, lightColor, *planeNormal, *npe, hitPoint, lightOption); 
+            getColor(planeColor, lightColor, lightPos, *planeNormal, *npe, hitPoint, lightOption); 
             ambient=planeColor;
           }
           delete npe;
