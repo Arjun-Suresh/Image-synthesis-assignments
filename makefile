@@ -9,7 +9,16 @@ CC		= g++
 LDFLAGS 	= -lglut -lGL -lm
 PROJECT		= pr04
 FILES		= pr04.cpp
+PROJECT2	= subSurface
+FILES2		= subSurface.cpp
 
-${PROJECT}:${FILES}
-	${CC} ${CFLAGS} -o ${PROJECT} ${FILES} ${LDFLAGS}
+subSurface: subSurface.o pr04.o
+	${CC} ${CFLAGS} -o subSurface.o pr04.o
+
+subSurface.o:subSurface.cpp
+	${CC} ${CFLAGS} -c subSurface.cpp ${LDFLAGS}
+
+pr04.o:pr04.cpp
+	${CC} ${CFLAGS} -c pr04.cpp ${LDFLAGS}
+	
 
