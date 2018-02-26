@@ -75,7 +75,8 @@ class vector
   
   double length()
   {
-    return pow((pow(x,2)+pow(y,2)+pow(z,2)),0.5);
+    double dist = pow(x,2)+pow(y,2)+pow(z,2);
+    return sqrt(dist);
   }
   
   vector* operator * (const vector& vObj)
