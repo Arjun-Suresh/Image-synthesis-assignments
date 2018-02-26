@@ -32,8 +32,8 @@
 #define SX 100
 #define SY 100
 
-#define SLX 50
-#define SLY 50
+#define SLX 100
+#define SLY 100
 
 #define SPOTLIGHTMIN 0.707
 #define MINANGLE 0.0
@@ -807,7 +807,7 @@ void applyRasterization()
           if (lightOption == 4)
           {
             lightPos->x = lightCorner->x + (lightN0->x)*SLX*((l+randomValX)/4.0) + (lightN1->x)*SLY*((m+randomValY)/4.0);
-            lightPos->y = lightCorner->x + (lightN0->y)*SLX*((l+randomValX)/4.0) + (lightN1->y)*SLY*((m+randomValY)/4.0);
+            lightPos->y = lightCorner->y + (lightN0->y)*SLX*((l+randomValX)/4.0) + (lightN1->y)*SLY*((m+randomValY)/4.0);
             lightPos->z = lightCorner->z + (lightN0->z)*SLX*((l+randomValX)/4.0) + (lightN1->z)*SLY*((m+randomValY)/4.0);
           }
           else if (lightOption != 2)
