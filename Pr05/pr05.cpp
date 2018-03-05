@@ -44,8 +44,6 @@
 #define KS 10
 #define KB 0
 
-#define PLANESX 100.0
-#define PLANESY 100.0
 
 using namespace std;
 // =============================================================================
@@ -609,7 +607,7 @@ void initLight(int option)
   else
   {
     if(option == 1 || option == 3)
-      lightPosition = new point(160,280,55);
+      lightPosition = new point(250,50,0);
     if(option>1)
     {
       lightDirection = new vector(115,20,-120);
@@ -702,14 +700,18 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
       yCord = 2*3.14159 - yCord;
     xCord = xCord/3.14159;
     yCord = yCord/(2*3.14159);
-    cout<<xCord<<" "<<yCord<<endl;
   }
   else if (shape == 2)
   {
-    vector p0h(hitPoint.x - plane00->x, hitPoint.y - plane00->y, hitPoint.z - plane00->z);
-    p0h.scalarMultiply(1.0/(double)p0h.length());
-    xCord = p0h.dotProduct(*planeN0)/PLANESX;
-    yCord = p0h.dotProduct(*planeN1)/PLANESY;
+    vector p0h(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y), hitPoint.z - floor(hitPoint.z));
+    p0h.scalarMultiply(1.0/p0h.length());
+    xCord = p0h.dotProduct(*planeN0);
+    yCord = p0h.dotProduct(*planeN1);
+    if (xCord<0)
+      xCord+=1;
+    if (yCord<0)
+      yCord+=1;
+    
   }
   else
   {
