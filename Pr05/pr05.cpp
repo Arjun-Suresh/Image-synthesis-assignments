@@ -694,12 +694,15 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
     vector sphereN1(0,0,1);
     vector sphereN0(1,0,0);
     double z = sphereN0.dotProduct(p0h);
-    double y = (sphereN1.dotProduct(p0h))/180.0;
-    double x = (sphereN2.dotProduct(p0h))/360.0;
-    xCord = acos(z);
-    yCord = acos(y/sin(xCord));
+    double y = sphereN1.dotProduct(p0h);
+    double x = sphereN2.dotProduct(p0h);
+    xCord = acos(z); 
+    yCord = acos(clamp(y/sin(xCord))); 
     if(x<0)
       yCord = 2*3.14159 - yCord;
+    xCord = xCord/3.14159;
+    yCord = yCord/(2*3.14159);
+    cout<<xCord<<" "<<yCord<<endl;
   }
   else if (shape == 2)
   {
@@ -717,12 +720,16 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
     double y = sphereN1.dotProduct(npe);
     double x = sphereN2.dotProduct(npe);
     xCord = acos(z);
-    yCord = acos(y/sin(xCord));
+    yCord = acos(clamp(y/sin(xCord)));
     if(x<0)
       yCord = 2*3.14159 - yCord;
+    xCord = xCord/3.14159;
+    yCord = yCord/(2*3.14159);
   }
   if (shape>0)
     shape--;
+  xCord=xCord*width[shape];
+  yCord=yCord*height[shape];
   double iCord = floor(xCord+0.5)-1;
   double jCord = floor(yCord+0.5)-1;
   if (iCord < 0)
