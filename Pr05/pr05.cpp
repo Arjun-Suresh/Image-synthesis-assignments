@@ -43,6 +43,10 @@
 #define KD 5
 #define KS 10
 #define KB 0
+
+#define PLANESX 100.0
+#define PLANESY 100.0
+
 using namespace std;
 // =============================================================================
 // These variables will store the input ppm image's width, height, and color
@@ -580,13 +584,18 @@ void initEnvironment()
   n1 = (*n0) * (*n2);
   n1->scalarMultiply(((double)1)/n1->length());
   p0 = new point (pc->x-((SX/2)*(n0->x))-((SY/2)*(n1->x)),pc->y-((SX/2)*(n0->y))-((SY/2)*(n1->y)),pc->z-((SX/2)*(n0->z))-((SY/2)*(n1->z)));
+
   spheres[0] = new point (325,325,-25);
   spheres[1] = new point (225,280,-155);
   radius[0]=50;
   radius[1]=75;
 
-  planeNormal = new vector(-0.996,0,-0.087);  //The external plane's normal is the normal of view plane by 95 degrees around y axis
-  planeCorner = new point(325, 325, -100);
+  planeN2 = new vector(-0.996,0,-0.087);  //The external plane's normal is the normal of view plane by 95 degrees around y axis
+  plane00 = new point(325, 325, -100);
+  planeN0 = (*planeN2) * (*Vref);
+  planeN0->scalarMultiply(1.0/planeN0->length());
+  planeN1 = (*planeN0) * (*planeN2);
+  planeN1->scalarMultiply(1.0/planeN1->length());  
 }
 
 void initLight(int option)
@@ -618,143 +627,50 @@ double clamp(double val)
   return val;
 }
 
-void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vector& nh, vector& npe, point& hitPoint, int option)
+void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vector& nh, vector& npe, point& hitPoint)
 {
   double d, s, b;
-  if(option == 3)
-  {
-    vector lightVector(hitPoint.x-lightPosition->x,hitPoint.y-lightPosition->y,hitPoint.z-lightPosition->z);
-    lightVector.scalarMultiply(1.0/lightVector.length());
-    if (lightVector.dotProduct(*lightDirection)<SPOTLIGHTMIN)
-      return;
-    else
-    {
-      lightVector.scalarMultiply(-1);
-
-      double t;
-      bool shadow=false;
-      if (sphereIntersection(spheres[0], &hitPoint, radius[0], &lightVector, t))
-      {
-        if (t>0)
-          shadow=true;
-      }
-      if (!shadow && sphereIntersection(spheres[1], &hitPoint, radius[1], &lightVector, t))
-      {
-        if (t>0)
-          shadow=true;
-      }
-      if (!shadow && planeIntersection(planeCorner, &hitPoint, planeNormal, &lightVector, t))
-      {
-        if (t>0)
-          shadow=true;
-      }
+  
+  vector lightVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
+  double distance = lightVector.length();
+  lightVector.scalarMultiply(1.0/distance);
     
-      if (shadow)
-        return;
-
-      double res = lightVector.dotProduct(nh);
-      if (res<0.2)
-        d=0;
-      else
-        d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
-
-      vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
-      reflection.scalarMultiply(-1.0/reflection.length());
-      double reflectValue = npe.dotProduct(reflection);
-      if (reflectValue < 0.95)
-        s=0;
-      else
-        s=clamp((reflectValue-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
-        
-      double outline = -1.0 * npe.dotProduct(nh);
-      b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
-    }
+  double t;
+  bool shadow=false;
+  if (sphereIntersection(spheres[0], &hitPoint, radius[0], &lightVector, t))
+  {
+    if (t>0 && t<=distance)
+      shadow=true;
   }
-  else if (option == 2)
+  if (!shadow && sphereIntersection(spheres[1], &hitPoint, radius[1], &lightVector, t))
   {
-    vector lightVector(-lightDirection->x, -lightDirection->y, -lightDirection->z);
-
-    double t;
-    bool shadow=false;
-    if (sphereIntersection(spheres[0], &hitPoint, radius[0], &lightVector, t))
-    {
-      if (t>0)
-        shadow=true;
-    }
-    if (!shadow && sphereIntersection(spheres[1], &hitPoint, radius[1], &lightVector, t))
-    {
-      if (t>0)
-        shadow=true;
-    }
-    if (!shadow && planeIntersection(planeCorner, &hitPoint, planeNormal, &lightVector, t))
-    {
-      if (t>0)
-        shadow=true;
-    }
-    
-    if (shadow)
-      return;
-    double res = lightVector.dotProduct(nh);
-    if (res<0.2)
-      d=0;
-    else
-      d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
- 
-    vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
-    reflection.scalarMultiply(-1.0/reflection.length());
-    double reflectValue = npe.dotProduct(reflection);
-    if (reflectValue < 0.95)
-      s=0;
-    else
-      s=clamp((reflectValue-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
-      
-    double outline = -1.0 * npe.dotProduct(nh);
-    b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
+    if (t>0 && t<=distance)
+      shadow=true;
+  }
+  if (!shadow && planeIntersection(plane00, &hitPoint, planeN2, &lightVector, t))
+  {
+    if (t>0 && t<=distance)
+      shadow=true;
   }
   
+  if (shadow)
+    return;
+  double res = lightVector.dotProduct(nh);
+  if (res<0.2)
+    d=0;
   else
-  {
-    vector lightVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
-    double distance = lightVector.length();
-    lightVector.scalarMultiply(1.0/distance);
-    
-    double t;
-    bool shadow=false;
-    if (sphereIntersection(spheres[0], &hitPoint, radius[0], &lightVector, t))
-    {
-      if (t>0 && t<=distance)
-        shadow=true;
-    }
-    if (!shadow && sphereIntersection(spheres[1], &hitPoint, radius[1], &lightVector, t))
-    {
-      if (t>0 && t<=distance)
-        shadow=true;
-    }
-    if (!shadow && planeIntersection(planeCorner, &hitPoint, planeNormal, &lightVector, t))
-    {
-      if (t>0 && t<=distance)
-        shadow=true;
-    }
-    
-    if (shadow)
-      return;
-    double res = lightVector.dotProduct(nh);
-    if (res<0.2)
-      d=0;
-    else
-      d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
+  d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
 
-    vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
-    reflection.scalarMultiply(-1.0/reflection.length());
-    double reflectValue = npe.dotProduct(reflection);
-    if (reflectValue < 0.95)
-      s=0;
-    else
-      s=clamp((reflectValue-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
+  vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
+  reflection.scalarMultiply(-1.0/reflection.length());
+  double reflectValue = npe.dotProduct(reflection);
+  if (reflectValue < 0.95)
+    s=0;
+  else
+    s=clamp((reflectValue-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
 
-    double outline = -1.0 * npe.dotProduct(nh);
-    b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
-  }
+  double outline = -1.0 * npe.dotProduct(nh);
+  b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
   color diffuse = surfaceColor, specular = surfaceColor, border = surfaceColor;
   diffuse.multiplyColor(lightColor);
   diffuse.multiply(KD*d);
@@ -767,6 +683,71 @@ void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vect
   surfaceColor.addColor(border);   
 }
 
+void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& green, int& blue)
+{
+  double xCord, yCord;
+  vector p0h(hitPoint.x - spheres[shape]->x, hitPoint.y - spheres[shape]->y, hitPoint.z - spheres[shape]->z);
+  p0h.scalarMultiply(1.0/(double)p0h.length());
+  if (shape == 0 || shape == 1)
+  {
+    vector sphereN2(0,1,0);
+    vector sphereN1(0,0,1);
+    vector sphereN0(1,0,0);
+    double z = sphereN0.dotProduct(p0h);
+    double y = (sphereN1.dotProduct(p0h))/180.0;
+    double x = (sphereN2.dotProduct(p0h))/360.0;
+    xCord = acos(z);
+    yCord = acos(y/sin(xCord));
+    if(x<0)
+      yCord = 2*3.14159 - yCord;
+  }
+  else if (shape == 2)
+  {
+    xCord = p0h.dotProduct(*planeN0)/PLANESX;
+    yCord = p0h.dotProduct(*planeN1)/PLANESY;
+  }
+  else
+  {
+    vector sphereN2(0,1,0);
+    vector sphereN1(0,0,1);
+    vector sphereN0(1,0,0);
+    double z = sphereN0.dotProduct(npe);
+    double y = sphereN1.dotProduct(npe);
+    double x = sphereN2.dotProduct(npe);
+    xCord = acos(z);
+    yCord = acos(y/sin(xCord));
+    if(x<0)
+      yCord = 2*3.14159 - yCord;
+  }
+  if (shape>0)
+    shape--;
+  double iCord = floor(xCord+0.5)-1;
+  double jCord = floor(yCord+0.5)-1;
+  double u = xCord - iCord;
+  double v = yCord - jCord;
+  
+  int red1=pixmapOrig[shape][(((int)jCord*width[shape])+(int)iCord)*3];
+  int green1=pixmapOrig[shape][(((int)jCord*width[shape])+(int)iCord)*3+1];
+  int blue1=pixmapOrig[shape][(((int)jCord*width[shape])+(int)iCord)*3+2];
+
+  int red2=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(int)iCord)*3];
+  int green2=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(int)iCord)*3+1];
+  int blue2=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(int)iCord)*3+2];
+
+  int red3=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(((int)iCord+1)%width[shape]))*3];
+  int green3=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(((int)iCord+1)%width[shape]))*3+1];
+  int blue3=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(((int)iCord+1)%width[shape]))*3+2];
+
+  int red4=pixmapOrig[shape][(((int)jCord*width[shape])+(((int)iCord+1)%width[shape]))*3];
+  int green4=pixmapOrig[shape][(((int)jCord*width[shape])+(((int)iCord+1)%width[shape]))*3+1];
+  int blue4=pixmapOrig[shape][(((int)jCord*width[shape])+(((int)iCord+1)%width[shape]))*3+1];
+    
+  red = (1.0-u)*(1.0-v)*red1 + u*(1.0-v)*red4 + (1.0-u)*v*red2 + u*v*red3;
+  green = (1.0-u)*(1.0-v)*green1 + u*(1.0-v)*green4 + (1.0-u)*v*green2 + u*v*green3;
+  blue = (1.0-u)*(1.0-v)*blue1 + u*(1.0-v)*blue4 + (1.0-u)*v*blue2 + u*v*blue3;
+}
+
+    
 void applyRasterization()
 {
   initLight(1);
@@ -777,9 +758,6 @@ void applyRasterization()
   {
     for(int i=0;i<widthComputed;i++)
     {
-      //int r = pixmapOrig[((((heightComputed-j-1)%height)*width)+(i%width))*3];
-      //int g = pixmapOrig[(((((heightComputed-j-1)%height)*width)+(i%width))*3)+1];
-      //int b = pixmapOrig[(((((heightComputed-j-1)%height)*width)+(i%width))*3)+2];
       double rChannel=0, gChannel=0, bChannel=0;
       double randomValX = ((double)rand() / (double)RAND_MAX)/4;
       double randomValY = ((double)rand() / (double)RAND_MAX)/4;
@@ -800,19 +778,10 @@ void applyRasterization()
           double t;
           color ambient;
           int shape=-1;
-     
-          if (lightOption == 4)
-          {
-            lightPos->x = lightCorner->x + (lightN0->x)*SLX*((l+randomValX)/4.0) + (lightN1->x)*SLY*((m+randomValY)/4.0);
-            lightPos->y = lightCorner->y + (lightN0->y)*SLX*((l+randomValX)/4.0) + (lightN1->y)*SLY*((m+randomValY)/4.0);
-            lightPos->z = lightCorner->z + (lightN0->z)*SLX*((l+randomValX)/4.0) + (lightN1->z)*SLY*((m+randomValY)/4.0);
-          }
-          else if (lightOption != 2)
-          {
-            lightPos->x=lightPosition->x;
-            lightPos->y=lightPosition->y;
-            lightPos->z=lightPosition->z;
-          }
+          lightPos->x=lightPosition->x;
+          lightPos->y=lightPosition->y;
+          lightPos->z=lightPosition->z;
+
           if (sphereIntersection(spheres[0], pe, radius[0], npe, t))
           {
             if (t<tMin || !changedValue)
@@ -831,7 +800,7 @@ void applyRasterization()
               changedValue=true;
             }
           }
-          if (planeIntersection(planeCorner, pe, planeNormal, npe, t))
+          if (planeIntersection(plane00, pe, planeN2, npe, t))
           {
             if ((t<tMin || !changedValue) && fieldLength < t)
             {
@@ -842,25 +811,34 @@ void applyRasterization()
           }
           if (shape == 0)
           {
-            ambient.setColor(100, 80, 60, 255);
+            int red, green, blue;
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
             nh.scalarMultiply(1.0/nh.length());
-            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint, lightOption);
+           
+            getSurfaceColor(hitPoint, 0, *npe, red, green, blue);
+            ambient.setColor(red, green, blue, 255);
+            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
           }
           if (shape == 1)
           {
-            ambient.setColor(50, 60, 120, 255);
+            int red, green, blue;
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
             nh.scalarMultiply(1.0/nh.length());
-            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint, lightOption);
+
+            getSurfaceColor(hitPoint, 1, *npe, red, green, blue);
+            ambient.setColor(red, green, blue, 255);
+            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
           }
           if (shape == 2)
           {
-            color planeColor(20,130,40,255);
+            int red, green, blue;
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            getColor(planeColor, lightColor, lightPos, *planeNormal, *npe, hitPoint, lightOption); 
+
+            getSurfaceColor(hitPoint, 2, *npe, red, green, blue);
+            color planeColor(red,green,blue,255);
+            getColor(planeColor, lightColor, lightPos, *planeN2, *npe, hitPoint); 
             ambient=planeColor;
           }
           delete npe;
@@ -874,9 +852,12 @@ void applyRasterization()
           }
           else
           {
-            rChannel+=150.0/255.0;
-            gChannel+=100.0/255.0;
-            bChannel+=180.0/255.0;
+            int red, green, blue;
+            point dummyPoint(0,0,0);
+            getSurfaceColor(dummyPoint, 3, *npe, red, green, blue);
+            rChannel+=red/255.0;
+            gChannel+=green/255.0;
+            bChannel+=blue/255.0;
           }
         }
       }
@@ -897,10 +878,8 @@ int main(int argc, char *argv[])
   char spherePPM[100], planePPM[100], infiniteSpherePPM[100];
   cout<<"Enter the PPM file name for sphere objects texture mapping\n";
   cin>>spherePPM;
-  readPPMFile(inputPPMFile, 0);
   cout<<"Enter the PPM file name for plane texture mapping\n";
   cin>>planePPM;
-  readPPMFile(inputPPMFile, 0);
   cout<<"Enter the PPM file name for infinite sphere texture mapping\n";
   cin>>infiniteSpherePPM;
 
