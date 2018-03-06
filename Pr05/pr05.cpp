@@ -1,7 +1,8 @@
 // =============================================================================
 // VIZA656/CSCE647 at Texas A&M University
-// Homework 4
-// Shadow casting
+// Homework 5
+// Texture mapping
+// grass.ppm - plane texture; sky.ppm - Infinite sphere texture; stone.ppm - sphere texture; normal.ppm - bump map
 // output files are generated in the same folder
 // =============================================================================
 
@@ -607,7 +608,7 @@ void initLight(int option)
   else
   {
     if(option == 1 || option == 3)
-      lightPosition = new point(250,250,30);
+      lightPosition = new point(250,250,-60);
     if(option>1)
     {
       lightDirection = new vector(115,20,-120);
@@ -690,7 +691,7 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
     p0h.scalarMultiply(1.0/(double)p0h.length());
     vector sphereN2(0,-1,0);
     vector sphereN1(0,0,1);
-    vector sphereN0(-1,0,0);
+    vector sphereN0(1,0,0);
     double z = sphereN2.dotProduct(p0h);
     double y = sphereN1.dotProduct(p0h);
     double x = sphereN0.dotProduct(p0h);
@@ -733,7 +734,7 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
   {
     vector sphereN2(0,-1,0);
     vector sphereN1(0,0,1);
-    vector sphereN0(-1,0,0);
+    vector sphereN0(1,0,0);
     double z = sphereN2.dotProduct(npe);
     double y = sphereN1.dotProduct(npe);
     double x = sphereN0.dotProduct(npe);
@@ -791,6 +792,9 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
     
 void applyRasterization()
 {
+  cout<<"Enter\n1. Plane + Sphere + Infinite sphere\n2. Normal map\n";
+  int option;
+  cin>>option;
   initLight(1);
   point* testPoint = new point(0,0,0);
   point* lightPos = new point(0,0,0);
@@ -799,7 +803,6 @@ void applyRasterization()
   {
     for(int i=0;i<widthComputed;i++)
     {
-      cout<<i<<" "<<j<<endl;
       double rChannel=0, gChannel=0, bChannel=0;
       double randomValX = ((double)rand() / (double)RAND_MAX)/4;
       double randomValY = ((double)rand() / (double)RAND_MAX)/4;
@@ -859,9 +862,12 @@ void applyRasterization()
             nh.scalarMultiply(1.0/nh.length());
 	    vector normalAdd(0,0,0);           
             getSurfaceColor(hitPoint, 0, *npe, red, green, blue, &normalAdd);
-            nh.x = nh.x+normalAdd.x;
-            nh.y = nh.y+normalAdd.y;
-            nh.z = nh.z+normalAdd.z;
+            if (option == 2)
+            {
+              nh.x = nh.x+normalAdd.x;
+              nh.y = nh.y+normalAdd.y;
+              nh.z = nh.z+normalAdd.z;
+            }            
             ambient.setColor(red, green, blue, 255);
             getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
           }
@@ -873,9 +879,12 @@ void applyRasterization()
             nh.scalarMultiply(1.0/nh.length());
 	    vector normalAdd(0,0,0);
             getSurfaceColor(hitPoint, 1, *npe, red, green, blue, &normalAdd);
-            nh.x = nh.x+normalAdd.x;
-            nh.y = nh.y+normalAdd.y;
-            nh.z = nh.z+normalAdd.z;            
+            if (option == 2)
+            {
+              nh.x = nh.x+normalAdd.x;
+              nh.y = nh.y+normalAdd.y;
+              nh.z = nh.z+normalAdd.z;
+            }            
             ambient.setColor(red, green, blue, 255);
             getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
           }
