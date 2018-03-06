@@ -588,7 +588,7 @@ void initEnvironment()
   radius[0]=50;
   radius[1]=75;
 
-  planeN2 = new vector(0,0.996,0.087);  //The external plane's normal is the normal of view plane by 95 degrees around y axis
+  planeN2 = new vector(0,-0.996,-0.087);  //The external plane's normal is the normal of view plane by 95 degrees around y axis
   plane00 = new point(50, 500, -100);
   planeN0 = (*planeN2) * (*Vref);
   planeN0->scalarMultiply(1.0/planeN0->length());
@@ -688,18 +688,26 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
   {
     vector p0h(hitPoint.x - spheres[shape]->x, hitPoint.y - spheres[shape]->y, hitPoint.z - spheres[shape]->z);
     p0h.scalarMultiply(1.0/(double)p0h.length());
-    vector sphereN2(0,1,0);
+    vector sphereN2(0,-1,0);
     vector sphereN1(0,0,1);
-    vector sphereN0(1,0,0);
-    double z = sphereN0.dotProduct(p0h);
+    vector sphereN0(-1,0,0);
+    double z = sphereN2.dotProduct(p0h);
     double y = sphereN1.dotProduct(p0h);
-    double x = sphereN2.dotProduct(p0h);
-    xCord = acos(z); 
-    yCord = acos(clamp(y/sin(xCord))); 
+    double x = sphereN0.dotProduct(p0h);
+    
+    xCord = acos(z);
+    double val = y/sin(xCord);
+    if (val < -1)
+      val=-1;
+    if (val>1)
+      val=1;
+    yCord = acos(val); 
     if(x<0)
       yCord = 2*3.14159 - yCord;
     xCord = xCord/3.14159;
     yCord = yCord/(2*3.14159);
+    
+
   }
   else if (shape == 2)
   {
@@ -715,14 +723,19 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
   }
   else
   {
-    vector sphereN2(0,1,0);
+    vector sphereN2(0,-1,0);
     vector sphereN1(0,0,1);
-    vector sphereN0(1,0,0);
-    double z = sphereN0.dotProduct(npe);
+    vector sphereN0(-1,0,0);
+    double z = sphereN2.dotProduct(npe);
     double y = sphereN1.dotProduct(npe);
-    double x = sphereN2.dotProduct(npe);
+    double x = sphereN0.dotProduct(npe);
     xCord = acos(z);
-    yCord = acos(clamp(y/sin(xCord)));
+    double val = y/sin(xCord);
+    if (val < -1)
+      val=-1;
+    if (val>1)
+      val=1;
+    yCord = acos(val);
     if(x<0)
       yCord = 2*3.14159 - yCord;
     xCord = xCord/3.14159;
@@ -732,30 +745,35 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
     shape--;
   xCord=xCord*width[shape];
   yCord=yCord*height[shape];
-  double iCord = floor(xCord+0.5)-1;
-  double jCord = floor(yCord+0.5)-1;
+  int iCord = floor(xCord+0.5)-1;
+  int jCord = floor(yCord+0.5)-1;
+  double u = xCord - ((double)(iCord)+0.5);
+  double v = yCord - ((double)(jCord)+0.5);
+  
   if (iCord < 0)
     iCord+=width[shape];
   if (jCord < 0)
     jCord+=height[shape];
-  double u = xCord - iCord;
-  double v = yCord - jCord;
-  //cout<<u<<" "<<v<<" "<<iCord<<" "<<jCord<<endl;
-  int red1=pixmapOrig[shape][(((int)jCord%height[shape]*width[shape])+(int)iCord%width[shape])*3];
-  int green1=pixmapOrig[shape][(((int)jCord%height[shape]*width[shape])+(int)iCord%width[shape])*3+1];
-  int blue1=pixmapOrig[shape][(((int)jCord%height[shape]*width[shape])+(int)iCord%width[shape])*3+2];
+  jCord=height[shape]-1-jCord;
+  int num1 = (((jCord%height[shape])*width[shape])+(iCord%width[shape]))*3;
+  int red1=pixmapOrig[shape][num1++];
+  int green1=pixmapOrig[shape][num1++];
+  int blue1=pixmapOrig[shape][num1];
 
-  int red2=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(int)iCord%width[shape])*3];
-  int green2=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(int)iCord%width[shape])*3+1];
-  int blue2=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(int)iCord%width[shape])*3+2];
+  int num2 = ((((jCord+1)%height[shape])*width[shape])+(iCord%width[shape]))*3;
+  int red2=pixmapOrig[shape][num2++];
+  int green2=pixmapOrig[shape][num2++];
+  int blue2=pixmapOrig[shape][num2];
 
-  int red3=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(((int)iCord+1)%width[shape]))*3];
-  int green3=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(((int)iCord+1)%width[shape]))*3+1];
-  int blue3=pixmapOrig[shape][(((((int)jCord+1)%height[shape])*width[shape])+(((int)iCord+1)%width[shape]))*3+2];
+  int num3 = ((((jCord+1)%height[shape])*width[shape])+((iCord+1)%width[shape]))*3;
+  int red3=pixmapOrig[shape][num3++];
+  int green3=pixmapOrig[shape][num3++];
+  int blue3=pixmapOrig[shape][num3];
 
-  int red4=pixmapOrig[shape][(((int)jCord%height[shape]*width[shape])+(((int)iCord+1)%width[shape]))*3];
-  int green4=pixmapOrig[shape][(((int)jCord%height[shape]*width[shape])+(((int)iCord+1)%width[shape]))*3+1];
-  int blue4=pixmapOrig[shape][(((int)jCord%height[shape]*width[shape])+(((int)iCord+1)%width[shape]))*3+1];
+  int num4 = (((jCord%height[shape])*width[shape])+((iCord+1)%width[shape]))*3;
+  int red4=pixmapOrig[shape][num4++];
+  int green4=pixmapOrig[shape][num4++];
+  int blue4=pixmapOrig[shape][num4];
     
   red = (1.0-u)*(1.0-v)*red1 + u*(1.0-v)*red4 + (1.0-u)*v*red2 + u*v*red3;
   green = (1.0-u)*(1.0-v)*green1 + u*(1.0-v)*green4 + (1.0-u)*v*green2 + u*v*green3;
@@ -857,7 +875,6 @@ void applyRasterization()
             getColor(planeColor, lightColor, lightPos, *planeN2, *npe, hitPoint); 
             ambient=planeColor;
           }
-          delete npe;
           if (shape!=-1)
           {
             double red, green, blue;
@@ -874,7 +891,8 @@ void applyRasterization()
             rChannel+=red/255.0;
             gChannel+=green/255.0;
             bChannel+=blue/255.0;
-          }
+          }          
+          delete npe;
         }
       }
       int rVal, gVal, bVal;
@@ -891,13 +909,13 @@ void applyRasterization()
 // =============================================================================
 int main(int argc, char *argv[])
 {
-  char spherePPM[100]="earth.ppm", planePPM[100]="grass.ppm", infiniteSpherePPM[100]="sky.ppm";
+  char spherePPM[100], planePPM[100], infiniteSpherePPM[100];
   cout<<"Enter the PPM file name for sphere objects texture mapping\n";
-  //cin>>spherePPM;
+  cin>>spherePPM;
   cout<<"Enter the PPM file name for plane texture mapping\n";
-  //cin>>planePPM;
+  cin>>planePPM;
   cout<<"Enter the PPM file name for infinite sphere texture mapping\n";
-  //cin>>infiniteSpherePPM;
+  cin>>infiniteSpherePPM;
 
   readPPMFile(spherePPM, 0);
   readPPMFile(planePPM, 1);
