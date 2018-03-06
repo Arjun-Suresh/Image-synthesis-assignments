@@ -49,8 +49,8 @@ using namespace std;
 // =============================================================================
 // These variables will store the input ppm image's width, height, and color
 // =============================================================================
-int width[3], height[3], maxColorValue=255, magicNo, widthComputed=750, heightComputed=750;
-unsigned char *pixmapOrig[3], *pixmapComputed;
+int width[4], height[4], maxColorValue=255, magicNo, widthComputed=750, heightComputed=750;
+unsigned char *pixmapOrig[4], *pixmapComputed;
 
 class point
 {
@@ -607,7 +607,7 @@ void initLight(int option)
   else
   {
     if(option == 1 || option == 3)
-      lightPosition = new point(250,50,0);
+      lightPosition = new point(250,250,30);
     if(option>1)
     {
       lightDirection = new vector(115,20,-120);
@@ -681,7 +681,7 @@ void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vect
   surfaceColor.addColor(border);   
 }
 
-void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& green, int& blue)
+void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& green, int& blue, vector* normalAdd)
 {
   double xCord, yCord;
   if (shape == 0 || shape == 1)
@@ -706,8 +706,16 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
       yCord = 2*3.14159 - yCord;
     xCord = xCord/3.14159;
     yCord = yCord/(2*3.14159);
-    
-
+    int xVal = (int)(xCord*width[3]);
+    int yVal = height[3]-1-(int)(yCord*height[3]);
+    int num = ((yVal*width[3])+xVal)*3;
+    double red = (double)pixmapOrig[3][num++]/255.0;
+    double green = (double)pixmapOrig[3][num++]/255.0;
+    double blue = (double)pixmapOrig[3][num]/255.0;
+    normalAdd->x = (2.0*red - 1.0)*sphereN0.x+(2.0*green - 1.0)*sphereN1.x+(2.0*blue - 1.0)*sphereN2.x;
+    normalAdd->y = (2.0*red - 1.0)*sphereN0.y+(2.0*green - 1.0)*sphereN1.y+(2.0*blue - 1.0)*sphereN2.y;
+    normalAdd->z = (2.0*red - 1.0)*sphereN0.z+(2.0*green - 1.0)*sphereN1.z+(2.0*blue - 1.0)*sphereN2.z;
+    normalAdd->scalarMultiply(1.0/normalAdd->length());
   }
   else if (shape == 2)
   {
@@ -849,8 +857,11 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
             nh.scalarMultiply(1.0/nh.length());
-           
-            getSurfaceColor(hitPoint, 0, *npe, red, green, blue);
+	    vector normalAdd(0,0,0);           
+            getSurfaceColor(hitPoint, 0, *npe, red, green, blue, &normalAdd);
+            nh.x = nh.x+normalAdd.x;
+            nh.y = nh.y+normalAdd.y;
+            nh.z = nh.z+normalAdd.z;
             ambient.setColor(red, green, blue, 255);
             getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
           }
@@ -860,8 +871,11 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
             nh.scalarMultiply(1.0/nh.length());
-
-            getSurfaceColor(hitPoint, 1, *npe, red, green, blue);
+	    vector normalAdd(0,0,0);
+            getSurfaceColor(hitPoint, 1, *npe, red, green, blue, &normalAdd);
+            nh.x = nh.x+normalAdd.x;
+            nh.y = nh.y+normalAdd.y;
+            nh.z = nh.z+normalAdd.z;            
             ambient.setColor(red, green, blue, 255);
             getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
           }
@@ -870,7 +884,7 @@ void applyRasterization()
             int red, green, blue;
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
 
-            getSurfaceColor(hitPoint, 2, *npe, red, green, blue);
+            getSurfaceColor(hitPoint, 2, *npe, red, green, blue,NULL);
             color planeColor(red,green,blue,255);
             getColor(planeColor, lightColor, lightPos, *planeN2, *npe, hitPoint); 
             ambient=planeColor;
@@ -887,7 +901,7 @@ void applyRasterization()
           {
             int red, green, blue;
             point dummyPoint(0,0,0);
-            getSurfaceColor(dummyPoint, 3, *npe, red, green, blue);
+            getSurfaceColor(dummyPoint, 3, *npe, red, green, blue, NULL);
             rChannel+=red/255.0;
             gChannel+=green/255.0;
             bChannel+=blue/255.0;
@@ -909,17 +923,20 @@ void applyRasterization()
 // =============================================================================
 int main(int argc, char *argv[])
 {
-  char spherePPM[100], planePPM[100], infiniteSpherePPM[100];
+  char spherePPM[100], planePPM[100], infiniteSpherePPM[100], normalMap[100];
   cout<<"Enter the PPM file name for sphere objects texture mapping\n";
   cin>>spherePPM;
   cout<<"Enter the PPM file name for plane texture mapping\n";
   cin>>planePPM;
   cout<<"Enter the PPM file name for infinite sphere texture mapping\n";
   cin>>infiniteSpherePPM;
+  cout<<"Enter the PPM file name for normal map image\n";
+  cin>>normalMap;
 
   readPPMFile(spherePPM, 0);
   readPPMFile(planePPM, 1);
   readPPMFile(infiniteSpherePPM, 2);
+  readPPMFile(normalMap, 3);
 
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
 
