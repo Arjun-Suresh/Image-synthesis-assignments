@@ -852,13 +852,13 @@ bool withinBound(point& intersect, int category)
 
 bool texturize(point* hitpoint, int& red,int& green, int& blue, int option, vector* npe=NULL, bool finite=true)
 {
-  point intersect;
+  point intersect(0,0,0);
   if (finite)
   {
-    vector ray;
+    vector ray(0,0,0);
     if (option == 1)
     {
-      if (hitPoint->x > ppe->x)
+      if (hitpoint->x > ppe->x)
         return false;
       ray.x = hitpoint->x - ppe->x;
       ray.y = hitpoint->y - ppe->y;
@@ -874,7 +874,7 @@ bool texturize(point* hitpoint, int& red,int& green, int& blue, int option, vect
   
     vector pn2Comp(-1.0 * pn2->x, -1.0 * pn2->y, -1.0 * pn2->z);
     double t=0.0;
-    if ((planeIntersection(pp0, hitpoint, pn2Comp, &ray, t))
+    if (planeIntersection(pp0, hitpoint, &pn2Comp, &ray, t))
     {
       intersect.x = hitpoint->x+t*ray.x;
       intersect.y = hitpoint->y+t*ray.y;
@@ -888,24 +888,24 @@ bool texturize(point* hitpoint, int& red,int& green, int& blue, int option, vect
   else
   {
     double t=0.0;
-    if ((planeIntersection(p0, pe, n2, npe, t))
+    if (planeIntersection(p0, pe, n2, npe, t))
     {
       intersect.x = p0->x+t*npe->x;
       intersect.y = p0->y+t*npe->y;
-      intersect.z = p0->z+t*npe->z);
+      intersect.z = p0->z+t*npe->z;
       if (!withinBound(intersect,2))
         return false;
     }
     else
       return false; 
   } 
-  vector vTemp(intersect.x-pp0.x,intersect.y-pp0.y,intersect.z-pp0.z);
-  int y = (int)(((vTemp.dotProduct(pn1))*(double)height[0])/SY);
-  int x = (int)(((vTemp.dotProduct(pn0))*(double)width[0])/SX);
-  int loc = ((y*width)+x)*3;
-  red = pixmapOrig[val++];
-  green = pixmapOrig[val++];
-  blue = pixmapOrig[val];
+  vector vTemp(intersect.x-pp0->x,intersect.y-pp0->y,intersect.z-pp0->z);
+  int y = (int)(((vTemp.dotProduct(*pn1))*(double)height[0])/SY);
+  int x = (int)(((vTemp.dotProduct(*pn0))*(double)width[0])/SX);
+  int loc = ((y*width[0])+x)*3;
+  red = pixmapOrig[0][loc++];
+  green = pixmapOrig[0][loc++];
+  blue = pixmapOrig[0][loc];
   return true;
 } 
   
@@ -979,7 +979,7 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
             nh.scalarMultiply(1.0/nh.length());
-            texturize(hitPoint, red, green, blue, option);                   
+            texturize(&hitPoint, red, green, blue, option);                   
             ambient.setColor(red, green, blue, 255);
             getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
           }
@@ -989,7 +989,7 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
             nh.scalarMultiply(1.0/nh.length());
-            texturize(hitPoint, red, green, blue, option);    
+            texturize(&hitPoint, red, green, blue, option);    
                       
             ambient.setColor(red, green, blue, 255);
             getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
@@ -998,7 +998,7 @@ void applyRasterization()
           {
             int red, green, blue;
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            texturize(hitPoint, red, green, blue, option);    
+            texturize(&hitPoint, red, green, blue, option);    
             color planeColor(red,green,blue,255);
             getColor(planeColor, lightColor, lightPos, *planeN2, *npe, hitPoint); 
             ambient=planeColor;
@@ -1015,7 +1015,7 @@ void applyRasterization()
           {
             int red, green, blue;
             point dummyPoint(0,0,0);
-            texturize(hitPoint, red, green, blue, option, npe, false);    
+            texturize(NULL, red, green, blue, option, npe, false);    
             rChannel+=red/255.0;
             gChannel+=green/255.0;
             bChannel+=blue/255.0;
