@@ -603,7 +603,7 @@ void initEnvironment()
 
   pd=50;
   pn2 = new vector(-1,0,0);
-  ppe = new point (550, 250, -150);
+  ppe = new point (550, 325, -25);
   ppc = new point (ppe->x+(pn2->x)*pd,ppe->y+(pn2->y)*pd,ppe->z+(pn2->z)*pd);
   vector* pVref = new vector(2, 1, 0);
   pVref->scalarMultiply(((double)1)/pVref->length());
@@ -701,112 +701,7 @@ void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vect
   surfaceColor.addColor(border);   
 }
 
-/*void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& green, int& blue, vector* normalAdd)
-{
-  double xCord, yCord;
-  if (shape == 0 || shape == 1)
-  {
-    vector p0h(hitPoint.x - spheres[shape]->x, hitPoint.y - spheres[shape]->y, hitPoint.z - spheres[shape]->z);
-    p0h.scalarMultiply(1.0/(double)p0h.length());
-    vector sphereN2(0,-1,0);
-    vector sphereN1(0,0,1);
-    vector sphereN0(1,0,0);
-    double z = sphereN2.dotProduct(p0h);
-    double y = sphereN1.dotProduct(p0h);
-    double x = sphereN0.dotProduct(p0h);
-    
-    xCord = acos(z);
-    double val = y/sin(xCord);
-    if (val < -1)
-      val=-1;
-    if (val>1)
-      val=1;
-    yCord = acos(val); 
-    if(x<0)
-      yCord = 2*3.14159 - yCord;
-    xCord = xCord/3.14159;
-    yCord = yCord/(2*3.14159);
-    int xVal = (int)(xCord*width[3]);
-    int yVal = height[3]-1-(int)(yCord*height[3]);
-    int num = ((yVal*width[3])+xVal)*3;
-    double red = (double)pixmapOrig[3][num++]/255.0;
-    double green = (double)pixmapOrig[3][num++]/255.0;
-    double blue = (double)pixmapOrig[3][num]/255.0;
-    normalAdd->x = (2.0*red - 1.0)*sphereN0.x+(2.0*green - 1.0)*sphereN1.x+(2.0*blue - 1.0)*sphereN2.x;
-    normalAdd->y = (2.0*red - 1.0)*sphereN0.y+(2.0*green - 1.0)*sphereN1.y+(2.0*blue - 1.0)*sphereN2.y;
-    normalAdd->z = (2.0*red - 1.0)*sphereN0.z+(2.0*green - 1.0)*sphereN1.z+(2.0*blue - 1.0)*sphereN2.z;
-    normalAdd->scalarMultiply(1.0/normalAdd->length());
-  }
-  else if (shape == 2)
-  {
-    vector p0h(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y), hitPoint.z - floor(hitPoint.z));
-    p0h.scalarMultiply(1.0/p0h.length());
-    xCord = p0h.dotProduct(*planeN0);
-    yCord = p0h.dotProduct(*planeN1);
-    if (xCord<0)
-      xCord+=1;
-    if (yCord<0)
-      yCord+=1;
-    
-  }
-  else
-  {
-    vector sphereN2(0,-1,0);
-    vector sphereN1(0,0,1);
-    vector sphereN0(1,0,0);
-    double z = sphereN2.dotProduct(npe);
-    double y = sphereN1.dotProduct(npe);
-    double x = sphereN0.dotProduct(npe);
-    xCord = acos(z);
-    double val = y/sin(xCord);
-    if (val < -1)
-      val=-1;
-    if (val>1)
-      val=1;
-    yCord = acos(val);
-    if(x<0)
-      yCord = 2*3.14159 - yCord;
-    xCord = xCord/3.14159;
-    yCord = yCord/(2*3.14159);
-  }
-  if (shape>0)
-    shape--;
-  xCord=xCord*width[shape];
-  yCord=yCord*height[shape];
-  int iCord = floor(xCord+0.5)-1;
-  int jCord = floor(yCord+0.5)-1;
-  double u = xCord - ((double)(iCord)+0.5);
-  double v = yCord - ((double)(jCord)+0.5);
-  
-  if (iCord < 0)
-    iCord+=width[shape];
-  if (jCord < 0)
-    jCord+=height[shape];
-  jCord=height[shape]-1-jCord;
-  int num1 = (((jCord%height[shape])*width[shape])+(iCord%width[shape]))*3;
-  int red1=pixmapOrig[shape][num1++];
-  int green1=pixmapOrig[shape][num1++];
-  int blue1=pixmapOrig[shape][num1];
 
-  int num2 = ((((jCord+1)%height[shape])*width[shape])+(iCord%width[shape]))*3;
-  int red2=pixmapOrig[shape][num2++];
-  int green2=pixmapOrig[shape][num2++];
-  int blue2=pixmapOrig[shape][num2];
-
-  int num3 = ((((jCord+1)%height[shape])*width[shape])+((iCord+1)%width[shape]))*3;
-  int red3=pixmapOrig[shape][num3++];
-  int green3=pixmapOrig[shape][num3++];
-  int blue3=pixmapOrig[shape][num3];
-
-  int num4 = (((jCord%height[shape])*width[shape])+((iCord+1)%width[shape]))*3;
-  int red4=pixmapOrig[shape][num4++];
-  int green4=pixmapOrig[shape][num4++];
-  int blue4=pixmapOrig[shape][num4];
-    
-  red = (1.0-u)*(1.0-v)*red1 + u*(1.0-v)*red4 + (1.0-u)*v*red2 + u*v*red3;
-  green = (1.0-u)*(1.0-v)*green1 + u*(1.0-v)*green4 + (1.0-u)*v*green2 + u*v*green3;
-  blue = (1.0-u)*(1.0-v)*blue1 + u*(1.0-v)*blue4 + (1.0-u)*v*blue2 + u*v*blue3;
-}*/
 
 bool withinBound(point& intersect, int category)
 {
@@ -814,21 +709,21 @@ bool withinBound(point& intersect, int category)
   vector *nx, *ny;
   if (category == 1)
   {
-    corner = p0;
-    nx = n0;
-    ny = n1;
-  }
-  else
-  {
     corner = pp0;
     nx = pn0;
     ny = pn1;
   }
+  else
+  {
+    corner = p0;
+    nx = n0;
+    ny = n1;
+  }
   point* p[4];
   p[0] = new point(corner->x, corner->y, corner->z);
-  p[1] = new point(corner->x+ n0->x*SX, corner->y+ n0->y*SX, corner->z+ n0->z*SX);
-  p[2] = new point(corner->x+ n1->x*SY, corner->y+ n1->y*SY, corner->z+ n1->z*SY);
-  p[3] = new point(corner->x+ n0->x*SX + n1->x*SY, corner->y+ n0->y*SX + n1->y*SY, corner->z+ n0->z*SX + n1->z*SY);
+  p[1] = new point(corner->x+ nx->x*SX, corner->y+ nx->y*SX, corner->z+ nx->z*SX);
+  p[2] = new point(corner->x+ ny->x*SY, corner->y+ ny->y*SY, corner->z+ ny->z*SY);
+  p[3] = new point(corner->x+ nx->x*SX + ny->x*SY, corner->y+ nx->y*SX + ny->y*SY, corner->z+ nx->z*SX + ny->z*SY);
   int xmin=p[0]->x, xmax=p[0]->x, ymin=p[0]->y, ymax=p[0]->y, zmin=p[0]->z, zmax=p[0]->z;
   for (int i=1;i<4;i++)
   {
@@ -845,24 +740,30 @@ bool withinBound(point& intersect, int category)
     if (zmax < p[i]->z)
       zmax = p[i]->z;
   }
+  for (int i=0;i<4;i++)
+    delete p[i];
   if (intersect.x >= xmin && intersect.x <= xmax &&intersect.y >= ymin && intersect.y <= ymax &&intersect.z >= zmin && intersect.z <= zmax)
     return true;
   return false;
 }
 
-bool texturize(point* hitpoint, int& red,int& green, int& blue, int option, vector* npe=NULL, bool finite=true)
+bool texturize(point* hitpoint, int& red,int& green, int& blue, int option, vector* npe=NULL, bool finite=true, point* planeIntersect=NULL)
 {
   point intersect(0,0,0);
+  point corner(0,0,0);
   if (finite)
   {
+    corner.x = pp0->x;
+    corner.y = pp0->y;
+    corner.z = pp0->z;
     vector ray(0,0,0);
     if (option == 1)
     {
       if (hitpoint->x > ppe->x)
         return false;
-      ray.x = hitpoint->x - ppe->x;
-      ray.y = hitpoint->y - ppe->y;
-      ray.z = hitpoint->z - ppe->z;
+      ray.x = -hitpoint->x + ppe->x;
+      ray.y = -hitpoint->y + ppe->y;
+      ray.z = -hitpoint->z + ppe->z;
       ray.scalarMultiply(1.0/ray.length());
     }
     else if (option == 2)
@@ -872,8 +773,8 @@ bool texturize(point* hitpoint, int& red,int& green, int& blue, int option, vect
       ray.z = -1.0 * pn2->z;
     }
   
-    vector pn2Comp(-1.0 * pn2->x, -1.0 * pn2->y, -1.0 * pn2->z);
     double t=0.0;
+    vector pn2Comp(-1.0 * pn2->x, -1.0 * pn2->y, -1.0 * pn2->z);
     if (planeIntersection(pp0, hitpoint, &pn2Comp, &ray, t))
     {
       intersect.x = hitpoint->x+t*ray.x;
@@ -883,23 +784,21 @@ bool texturize(point* hitpoint, int& red,int& green, int& blue, int option, vect
         return false;
     }
     else
+    {
       return false; 
+    }
   }
   else
   {
+    corner.x = p0->x;
+    corner.y = p0->y;
+    corner.z = p0->z;
     double t=0.0;
-    if (planeIntersection(p0, pe, n2, npe, t))
-    {
-      intersect.x = p0->x+t*npe->x;
-      intersect.y = p0->y+t*npe->y;
-      intersect.z = p0->z+t*npe->z;
-      if (!withinBound(intersect,2))
-        return false;
-    }
-    else
-      return false; 
+    intersect.x = planeIntersect->x;
+    intersect.y = planeIntersect->y;
+    intersect.z = planeIntersect->z;
   } 
-  vector vTemp(intersect.x-pp0->x,intersect.y-pp0->y,intersect.z-pp0->z);
+  vector vTemp(intersect.x-corner.x,intersect.y-corner.y,intersect.z-corner.z);
   int y = (int)(((vTemp.dotProduct(*pn1))*(double)height[0])/SY);
   int x = (int)(((vTemp.dotProduct(*pn0))*(double)width[0])/SX);
   int loc = ((y*width[0])+x)*3;
@@ -979,7 +878,12 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
             nh.scalarMultiply(1.0/nh.length());
-            texturize(&hitPoint, red, green, blue, option);                   
+            if (!texturize(&hitPoint, red, green, blue, option))
+            {
+              red = 20;
+              green=30;
+              blue = 70;
+            }             
             ambient.setColor(red, green, blue, 255);
             getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
           }
@@ -989,7 +893,12 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
             nh.scalarMultiply(1.0/nh.length());
-            texturize(&hitPoint, red, green, blue, option);    
+            if(!texturize(&hitPoint, red, green, blue, option))
+            {
+              red = 60;
+              green=30;
+              blue = 70;
+            }
                       
             ambient.setColor(red, green, blue, 255);
             getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
@@ -998,7 +907,12 @@ void applyRasterization()
           {
             int red, green, blue;
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            texturize(&hitPoint, red, green, blue, option);    
+            if(!texturize(&hitPoint, red, green, blue, option))
+            {
+              red = 20;
+              green=90;
+              blue = 70;
+            }  
             color planeColor(red,green,blue,255);
             getColor(planeColor, lightColor, lightPos, *planeN2, *npe, hitPoint); 
             ambient=planeColor;
@@ -1015,7 +929,12 @@ void applyRasterization()
           {
             int red, green, blue;
             point dummyPoint(0,0,0);
-            texturize(NULL, red, green, blue, option, npe, false);    
+            if(!texturize(NULL, red, green, blue, option, npe, false,testPoint))
+            {
+              red = 40;
+              green=30;
+              blue = 20;
+            }
             rChannel+=red/255.0;
             gChannel+=green/255.0;
             bChannel+=blue/255.0;
