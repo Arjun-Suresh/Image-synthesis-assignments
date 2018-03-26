@@ -768,62 +768,6 @@ double clamp(double val)
   return val;
 }
 
-void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vector& nh, vector& npe, point& hitPoint)
-{
-  double d, s, b;
-  
-  vector lightVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
-  double distance = lightVector.length();
-  lightVector.scalarMultiply(1.0/distance);
-    
-  double t;
-  bool shadow=false;
-  if (sphereIntersection(spheres[0], &hitPoint, radius[0], &lightVector, t))
-  {
-    if (t>0 && t<=distance)
-      shadow=true;
-  }
-  if (!shadow && sphereIntersection(spheres[1], &hitPoint, radius[1], &lightVector, t))
-  {
-    if (t>0 && t<=distance)
-      shadow=true;
-  }
-  if (!shadow && planeIntersection(plane00, &hitPoint, planeN2, &lightVector, t))
-  {
-    if (t>0 && t<=distance)
-      shadow=true;
-  }
-  
-  if (shadow)
-    return;
-  double res = lightVector.dotProduct(nh);
-  if (res<0.2)
-    d=0;
-  else
-  d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
-
-  vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
-  reflection.scalarMultiply(-1.0/reflection.length());
-  double reflectValue = npe.dotProduct(reflection);
-  if (reflectValue < 0.95)
-    s=0;
-  else
-    s=clamp((reflectValue-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
-
-  double outline = -1.0 * npe.dotProduct(nh);
-  b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
-  color diffuse = surfaceColor, specular = surfaceColor, border = surfaceColor;
-  diffuse.multiplyColor(lightColor);
-  diffuse.multiply(KD*d);
-  specular.multiplyColor(lightColor);
-  specular.multiply(KS*s);
-  border.multiplyColor(lightColor);
-  border.multiply(KB*b);
-  surfaceColor.addColor(diffuse);
-  surfaceColor.addColor(specular);
-  surfaceColor.addColor(border);   
-}
-
 float abs(float val)
 {
   if (val < 0)
@@ -912,6 +856,62 @@ void computeParameters(triangle& tObj, point& hitpoint, vector& normal, float te
     tex[1] = tObj.texture[0][1] * (val1/max) + tObj.texture[1][1] * (val2/max) + tObj.texture[2][1] * (val3/max);
   }
 }
+
+void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vector& nh, vector& npe, point& hitPoint)
+{
+  double d, s, b;
+  
+  vector lightVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
+  double distance = lightVector.length();
+  lightVector.scalarMultiply(1.0/distance);
+    
+  double t;
+  bool shadow=false;
+  
+  for (int k=0; k<numOfMeshes; k++)
+  {
+    if (planeIntersection(tObjs[k]->vertices[0], &hitPoint, tObjs[k]->triangleNormal, &lightVector, t))
+    {
+      point intersect(hitPoint.x+(lightVector.x*t),hitPoint.y+(lightVector.y*t),hitPoint.z+(lightVector.z*t));
+      if (liesInside(intersect, *tObjs[k]) && t>0 && t<=distance)
+      {
+        shadow=true;
+        break;
+      }
+    }
+  }
+  
+  if (shadow)
+    return;
+  double res = lightVector.dotProduct(nh);
+  if (res<0.2)
+    d=0;
+  else
+  d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
+
+  vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
+  reflection.scalarMultiply(-1.0/reflection.length());
+  double reflectValue = npe.dotProduct(reflection);
+  if (reflectValue < 0.95)
+    s=0;
+  else
+    s=clamp((reflectValue-MINREFLECTION)/(MAXREFLECTION-MINREFLECTION));
+
+  double outline = -1.0 * npe.dotProduct(nh);
+  b = clamp((outline-MINANGLE)/(MAXANGLE-MINANGLE));
+  color diffuse = surfaceColor, specular = surfaceColor, border = surfaceColor;
+  diffuse.multiplyColor(lightColor);
+  diffuse.multiply(KD*d);
+  specular.multiplyColor(lightColor);
+  specular.multiply(KS*s);
+  border.multiplyColor(lightColor);
+  border.multiply(KB*b);
+  surfaceColor.addColor(diffuse);
+  surfaceColor.addColor(specular);
+  surfaceColor.addColor(border);   
+}
+
+
 void applyRasterization()
 {
   cout<<"Enter:\n1. Without obj file\n2. With obj file\n";
