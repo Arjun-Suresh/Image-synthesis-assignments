@@ -199,6 +199,7 @@ class triangle
   vector* normals[3];
   vector* triangleNormal;
   float texture[3][2];
+  bool colorAdded;
 
   triangle(point& p1, point& p2, point& p3, vector& v1, vector& v2, vector& v3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL)
   {
@@ -222,6 +223,12 @@ class triangle
     vector *t3 = t1 * t2;
     triangleNormal = new vector(t3->x, t3->y, t3->z);
     triangleNormal->scalarMultiply(1.0/triangleNormal->length());
+
+    if (tex1 && tex2 && tex3)
+      colorAdded=true;
+    else
+      colorAdded=false;
+
   }
 
   triangle(point& p1, point& p2, point& p3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL)
@@ -820,7 +827,7 @@ float maxAbs(float a, float b, float c)
   return c;
 }
 
-bool liesInside(point& hitpoint, triangle& tObj)
+void computeTriangleValues(point& hitpoint, triangle& tObj, float& max, float& val1, float& val2, float& val3)
 {
   vector v1(tObj.vertices[0]->x-hitpoint.x, tObj.vertices[0]->y-hitpoint.y, tObj.vertices[0]->z-hitpoint.z);
   vector v2(tObj.vertices[1]->x-hitpoint.x, tObj.vertices[1]->y-hitpoint.y, tObj.vertices[1]->z-hitpoint.z);
@@ -833,8 +840,7 @@ bool liesInside(point& hitpoint, triangle& tObj)
   vector t2(tObj.vertices[2]->x-tObj.vertices[0]->x, tObj.vertices[2]->y-tObj.vertices[0]->y, tObj.vertices[2]->z-tObj.vertices[0]->z);
   vector *a = t1 * t2;
 
-  float max = maxAbs(a->x, a->y, a->z);
-  float val1, val2, val3;
+  max = maxAbs(a->x, a->y, a->z);
   if (max == a->x)
   {
     val1 = a1->x;
@@ -853,12 +859,37 @@ bool liesInside(point& hitpoint, triangle& tObj)
     val2 = a2->z;
     val3 = a3->z;
   }
+}
+
+bool liesInside(point& hitpoint, triangle& tObj)
+{
+  float max;
+  float val1, val2, val3;
+
+  computeTriangleValues(hitpoint, tObj, max, val1, val2, val3);
 
   if (val1/max > 0 && val2/max > 0 && val3/max > 0 && (val1/max + val2/max + val3/max == 1.0))
     return true;
   return false;
 }
 
+void computeParameters(triangle& tObj, point& hitpoint, vector& normal, float tex[2]=NULL)
+{
+  float max;
+  float val1, val2, val3;
+
+  computeTriangleValues(hitpoint, tObj, max, val1, val2, val3);
+
+  normal.x = tObj.normals[0]->x * (val1/max) + tObj.normals[1]->x * (val2/max) + tObj.normals[2]->x * (val3/max);
+  normal.x = tObj.normals[0]->y * (val1/max) + tObj.normals[1]->y * (val2/max) + tObj.normals[2]->y * (val3/max);
+  normal.x = tObj.normals[0]->z * (val1/max) + tObj.normals[1]->z * (val2/max) + tObj.normals[2]->z * (val3/max);
+
+  if (tex)
+  {
+    tex[0] = tObj.texture[0][0] * (val1/max) + tObj.texture[1][0] * (val2/max) + tObj.texture[2][0] * (val3/max);
+    tex[1] = tObj.texture[0][1] * (val1/max) + tObj.texture[1][1] * (val2/max) + tObj.texture[2][1] * (val3/max);
+  }
+}
 void applyRasterization()
 {
   cout<<"Enter:\n1. Without obj file\n2. With obj file\n";
@@ -872,6 +903,7 @@ void applyRasterization()
     cin>>value;
     initMeshes(value);
   }
+
   point* testPoint = new point(0,0,0);
   point* lightPos = new point(0,0,0);
   color lightColor(10,10,10,10);
@@ -916,39 +948,24 @@ void applyRasterization()
               }
             }
           }
-          
-          if (shape == 2)
+          if (changedValue)
           {
             int red, green, blue;
-            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            if(!texturize(&hitPoint, red, green, blue, option))
+            if (!tObjs[shape]->colorAdded)
             {
-              red = 20;
-              green=90;
-              blue = 70;
-            }  
-            color planeColor(red,green,blue,255);
-            getColor(planeColor, lightColor, lightPos, *planeN2, *npe, hitPoint); 
+              red = 20, green = 90, blue = 70;
+            }
+            color planeColor(red, green, blue, 255);
+            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
+            vector normalAtPoint;
+            computeParameters(*tObjs[shape], hitPoint, normalAtPoint);
+            normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
+            getColor(planeColor, lightColor, lightPos, normalAtPoint, *npe, hitPoint); 
             ambient=planeColor;
-          }
-          if (shape!=-1)
-          {
-            double red, green, blue;
-            ambient.getResult(red, green, blue);
-            rChannel+=red;
-            gChannel+=green;
-            bChannel+=blue;
           }
           else
           {
-            int red, green, blue;
-            point dummyPoint(0,0,0);
-            if(!texturize(NULL, red, green, blue, option, npe, false,testPoint))
-            {
-              red = 40;
-              green=30;
-              blue = 20;
-            }
+            int red=40, green=30, blue=20;
             rChannel+=red/255.0;
             gChannel+=green/255.0;
             bChannel+=blue/255.0;
