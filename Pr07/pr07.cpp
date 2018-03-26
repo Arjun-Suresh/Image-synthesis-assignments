@@ -211,23 +211,25 @@ class triangle
     normals[1] = new vector(v2.x, v2.y, v2.z);
     normals[2] = new vector(v3.x, v3.y, v3.z);
 
-    texture[0][0] = tex1[0];
-    texture[0][1] = tex1[1];
-    texture[1][0] = tex2[0];
-    texture[1][1] = tex2[1];
-    texture[2][0] = tex3[0];
-    texture[2][1] = tex3[1];
+    if (tex1 && tex2 && tex3)
+    {
+      colorAdded=true;
+      texture[0][0] = tex1[0];
+      texture[0][1] = tex1[1];
+      texture[1][0] = tex2[0];
+      texture[1][1] = tex2[1];
+      texture[2][0] = tex3[0];
+      texture[2][1] = tex3[1];
+    }
+    else
+      colorAdded=false;
+
 
     vector t1(vertices[1]->x-vertices[0]->x, vertices[1]->y-vertices[0]->y, vertices[1]->z-vertices[0]->z);
     vector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
     vector *t3 = t1 * t2;
     triangleNormal = new vector(t3->x, t3->y, t3->z);
     triangleNormal->scalarMultiply(1.0/triangleNormal->length());
-
-    if (tex1 && tex2 && tex3)
-      colorAdded=true;
-    else
-      colorAdded=false;
 
   }
 
@@ -237,12 +239,19 @@ class triangle
     vertices[1] = new point(p2.x, p2.y, p2.z);
     vertices[2] = new point(p3.x, p3.y, p3.z);
 
-    texture[0][0] = tex1[0];
-    texture[0][1] = tex1[1];
-    texture[1][0] = tex2[0];
-    texture[1][1] = tex2[1];
-    texture[2][0] = tex3[0];
-    texture[2][1] = tex3[1];
+    if (tex1 && tex2 && tex3)
+    {
+      colorAdded=true;
+      texture[0][0] = tex1[0];
+      texture[0][1] = tex1[1];
+      texture[1][0] = tex2[0];
+      texture[1][1] = tex2[1];
+      texture[2][0] = tex3[0];
+      texture[2][1] = tex3[1];
+    }
+    else
+      colorAdded=false;
+
 
     vector t1(vertices[1]->x-vertices[0]->x, vertices[1]->y-vertices[0]->y, vertices[1]->z-vertices[0]->z);
     vector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
@@ -987,10 +996,10 @@ void applyRasterization()
 // =============================================================================
 int main(int argc, char *argv[])
 {
-  char spherePPM[100], planePPM[100], infiniteSpherePPM[100], normalMap[100];
+  /*char spherePPM[100], planePPM[100], infiniteSpherePPM[100], normalMap[100];
   cout<<"Enter the PPM file name for objects texture\n";
   cin>>spherePPM;
-  readPPMFile(spherePPM, 0);
+  readPPMFile(spherePPM, 0);*/
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
 
   initEnvironment();

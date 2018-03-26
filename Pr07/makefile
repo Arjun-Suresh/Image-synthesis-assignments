@@ -11,4 +11,4 @@ PROJECT		= pr07
 FILES		= pr07.cpp
 
 ${PROJECT}:${FILES}
-	${CC} ${CFLAGS} -o ${PROJECT} ${FILES} ${LDFLAGS}
+	${CC} ${CFLAGS} -o ${PROJECT} ${FILES} ${LDFLAGS} -ggdb -O0
