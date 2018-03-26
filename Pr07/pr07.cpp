@@ -264,6 +264,15 @@ class triangle
     normals[1] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
     normals[2] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
   }
+
+  ~triangle()
+  {
+    for(int i=0;i<3;i++)
+    {
+      delete vertices[i];
+      delete normals[i];
+    }
+  }
 };
 
 point *pc, *p0, *pe; //Field of view and eye
@@ -868,6 +877,10 @@ void computeTriangleValues(point& hitpoint, triangle& tObj, float& max, float& v
     val2 = a2->z;
     val3 = a3->z;
   }
+  delete a1;
+  delete a2;
+  delete a3;
+  delete a;
 }
 
 bool liesInside(point& hitpoint, triangle& tObj)
@@ -920,6 +933,7 @@ void applyRasterization()
   {
     for(int i=0;i<widthComputed;i++)
     {
+      cout<<i<<" "<<j<<endl;
       double rChannel=0, gChannel=0, bChannel=0;
       double randomValX = ((double)rand() / (double)RAND_MAX)/4;
       double randomValY = ((double)rand() / (double)RAND_MAX)/4;
@@ -928,7 +942,7 @@ void applyRasterization()
         for(int l=0;l<4;l++)
         {
           double x= i + (double)l/4 + randomValX;
-	  double y= j + (double)m/4 + randomValY;
+	        double y= j + (double)m/4 + randomValY;
       	  testPoint->x = p0->x + (n0->x)*SX*(x/widthComputed) + (n1->x)*SY*(y/heightComputed);
           testPoint->y = p0->y + (n0->y)*SX*(x/widthComputed) + (n1->y)*SY*(y/heightComputed);
           testPoint->z = p0->z + (n0->z)*SX*(x/widthComputed) + (n1->z)*SY*(y/heightComputed);
