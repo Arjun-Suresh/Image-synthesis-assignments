@@ -221,6 +221,7 @@ class triangle
     vector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
     vector *t3 = t1 * t2;
     triangleNormal = new vector(t3->x, t3->y, t3->z);
+    triangleNormal->scalarMultiply(1.0/triangleNormal->length());
   }
 
   triangle(point& p1, point& p2, point& p3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL)
@@ -240,6 +241,7 @@ class triangle
     vector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
     vector *t3 = t1 * t2;
     triangleNormal = new vector(t3->x, t3->y, t3->z);
+    triangleNormal->scalarMultiply(1.0/triangleNormal->length());
 
 
     normals[0] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
@@ -797,12 +799,79 @@ void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vect
   surfaceColor.addColor(border);   
 }
 
+float abs(float val)
+{
+  if (val < 0)
+    return val * (-1.0);
+  return val;
+}
+float maxAbs(float a, float b, float c)
+{
+  if (abs(a)>abs(b))
+  {
+    if (abs(a)>abs(c))
+      return a;
+  }
+  else
+  {
+    if (abs(b)>abs(c))
+      return b;
+  }
+  return c;
+}
+
+bool liesInside(point& hitpoint, triangle& tObj)
+{
+  vector v1(tObj.vertices[0]->x-hitpoint.x, tObj.vertices[0]->y-hitpoint.y, tObj.vertices[0]->z-hitpoint.z);
+  vector v2(tObj.vertices[1]->x-hitpoint.x, tObj.vertices[1]->y-hitpoint.y, tObj.vertices[1]->z-hitpoint.z);
+  vector v3(tObj.vertices[2]->x-hitpoint.x, tObj.vertices[2]->y-hitpoint.y, tObj.vertices[2]->z-hitpoint.z);
+
+  vector* a1 = v2 * v3;
+  vector* a2 = v3 * v1;
+  vector* a3 = v1 * v2;
+  vector t1(tObj.vertices[1]->x-tObj.vertices[0]->x, tObj.vertices[1]->y-tObj.vertices[0]->y, tObj.vertices[1]->z-tObj.vertices[0]->z);
+  vector t2(tObj.vertices[2]->x-tObj.vertices[0]->x, tObj.vertices[2]->y-tObj.vertices[0]->y, tObj.vertices[2]->z-tObj.vertices[0]->z);
+  vector *a = t1 * t2;
+
+  float max = maxAbs(a->x, a->y, a->z);
+  float val1, val2, val3;
+  if (max == a->x)
+  {
+    val1 = a1->x;
+    val2 = a2->x;
+    val3 = a3->x;
+  }
+  else if (max == a->y)
+  {
+    val1 = a1->y;
+    val2 = a2->y;
+    val3 = a3->y;
+  }
+  else
+  {
+    val1 = a1->z;
+    val2 = a2->z;
+    val3 = a3->z;
+  }
+
+  if (val1/max > 0 && val2/max > 0 && val3/max > 0 && (val1/max + val2/max + val3/max == 1.0))
+    return true;
+  return false;
+}
+
 void applyRasterization()
 {
-  cout<<"Enter:\n1. Perspective image projection\n2. Parallel image projection\n";
+  cout<<"Enter:\n1. Without obj file\n2. With obj file\n";
   int option;
   cin>>option;
   initLight(1);
+  if (option == 1)
+  {
+    cout << "Enter:\n1. Cube\n2. Tetrahedron\n";
+    int value;
+    cin>>value;
+    initMeshes(value);
+  }
   point* testPoint = new point(0,0,0);
   point* lightPos = new point(0,0,0);
   color lightColor(10,10,10,10);
@@ -834,64 +903,20 @@ void applyRasterization()
           lightPos->y=lightPosition->y;
           lightPos->z=lightPosition->z;
 
-          if (sphereIntersection(spheres[0], pe, radius[0], npe, t))
+          for (int k=0; k<numOfMeshes; k++)
           {
-            if (t<tMin || !changedValue)
+            if (planeIntersection(tObjs[k]->vertices[0], pe, tObjs[k]->triangleNormal, npe, t))
             {
-              shape=0;
-              tMin=t;
-              changedValue=true;
+              point hitPoint(pe->x+(npe->x*t),pe->y+(npe->y*t),pe->z+(npe->z*t));
+              if (liesInside(hitPoint, *tObjs[k]) && (t<tMin || !changedValue) && fieldLength < t)
+              {
+                shape = k;
+                tMin = t;
+                changedValue = true;
+              }
             }
           }
-          if (sphereIntersection(spheres[1], pe, radius[1], npe, t))
-          {
-            if (t<tMin || !changedValue)
-            {
-              shape=1;
-              tMin=t;
-              changedValue=true;
-            }
-          }
-          if (planeIntersection(plane00, pe, planeN2, npe, t))
-          {
-            if ((t<tMin || !changedValue) && fieldLength < t)
-            {
-     	      shape=2;
-              tMin=t;
-              changedValue=true;
-            }
-          }
-          if (shape == 0)
-          {
-            int red, green, blue;
-            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
-            nh.scalarMultiply(1.0/nh.length());
-            if (!texturize(&hitPoint, red, green, blue, option))
-            {
-              red = 20;
-              green=30;
-              blue = 70;
-            }             
-            ambient.setColor(red, green, blue, 255);
-            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
-          }
-          if (shape == 1)
-          {
-            int red, green, blue;
-            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
-            nh.scalarMultiply(1.0/nh.length());
-            if(!texturize(&hitPoint, red, green, blue, option))
-            {
-              red = 60;
-              green=30;
-              blue = 70;
-            }
-                      
-            ambient.setColor(red, green, blue, 255);
-            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
-          }
+          
           if (shape == 2)
           {
             int red, green, blue;
