@@ -191,6 +191,97 @@ class color
         bVal=1;
     }
 };
+class matrix
+{
+  public:
+  float a[4][4];
+  void rotateAroundX(float theta)
+  {
+    for(int i=0;i<4;i++)
+    {
+      a[i][i]=1;
+      if(i==1)
+      {
+        a[i][1]=cos(theta);
+        a[i][2]=-sin(theta);
+      }
+      if(i==2)
+      {
+        a[i][1]=sin(theta);
+        a[i][2]=cos(theta);
+      }
+    }
+  }
+  void rotateAroundY(float theta)
+  {
+    for(int i=0;i<4;i++)
+    {
+      a[i][i]=1;
+      if(i==2)
+      {
+        a[i][2]=cos(theta);
+        a[i][0]=-sin(theta);
+      }
+      if(i==0)
+      {
+        a[i][2]=sin(theta);
+        a[i][0]=cos(theta);
+      }
+    }
+  }
+  void rotateAroundZ(float theta)
+  {
+    for(int i=0;i<4;i++)
+    {
+      a[i][i]=1;
+      if(i==0)
+      {
+        a[i][0]=cos(theta);
+        a[i][1]=-sin(theta);
+      }
+      if(i==1)
+      {
+        a[i][0]=sin(theta);
+        a[i][1]=cos(theta);
+      }
+    }
+  }
+  void translate(float tx, float ty, float tz)
+  {
+    for(int i=0;i<4;i++)
+    {
+      a[i][i]=1;
+      if (i==0)
+        a[i][3]=tx;
+      if (i==1)
+        a[i][3]=ty;
+      if (i==2)
+        a[i][3]=tz;
+    }
+  }
+  matrix* operator * (const matrix& m)
+  {
+    matrix* result = new matrix();
+    for(int i=0;i<4;i++)
+    {
+      for(int j=0;j<4;j++)
+      {
+        int sum=0;
+        for(int k=0;k<4;k++)
+          sum+=a[i][k]*m.a[k][j];
+        result->a[i][j]=sum;
+      }
+    }
+    return result;
+  }
+  template <typename T>
+  void operate(T& input, T& output)
+  {
+    output.x = a[0][0] * input.x + a[0][1] * input.y + a[0][2] * input.z;
+    output.y = a[1][0] * input.x + a[1][1] * input.y + a[1][2] * input.z;
+    output.z = a[2][0] * input.x + a[2][1] * input.y + a[2][2] * input.z;
+  }
+};
 
 class triangle
 {
@@ -201,7 +292,7 @@ class triangle
   float texture[3][2];
   bool colorAdded;
 
-  triangle(point& p1, point& p2, point& p3, vector& v1, vector& v2, vector& v3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL)
+  triangle(point& p1, point& p2, point& p3, vector& v1, vector& v2, vector& v3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL, bool rotate=false)
   {
     vertices[0] = new point(p1.x, p1.y, p1.z);
     vertices[1] = new point(p2.x, p2.y, p2.z);
@@ -224,7 +315,42 @@ class triangle
     else
       colorAdded=false;
 
+    if (rotate)
+    {
+      for(int i=0; i<3;i++)
+      {
+        matrix m1, m2, m3, m4;
+        m1.translate(-vertices[i]->x, -vertices[i]->y, -vertices[i]->z);
+        m2.rotateAroundX(3.1416/4.0);
+        m3.rotateAroundY(3.1416/4.0);
+        m4.translate(vertices[i]->x, vertices[i]->y, vertices[i]->z);
+        matrix* res1 = m1 * m2;
+        matrix* res2 = *res1 * m3;
+        matrix* res3 = *res2 * m4;
+        point result;
+        res3->operate<point>(*vertices[i], result);
+        vertices[i]->x = result.x;
+        vertices[i]->y = result.y;
+        vertices[i]->z = result.z;
+        delete res1;
+        delete res2;
+        delete res3;
 
+        m1.translate(-normals[i]->x, -normals[i]->y, -normals[i]->z);
+        m4.translate(normals[i]->x, normals[i]->y, normals[i]->z);
+        matrix* res4 = m1 * m2;
+        matrix* res5 = *res4 * m3;
+        matrix* res6 = *res5 * m4;
+        vector vResult;
+        res6->operate<vector>(*normals[i], vResult);
+        normals[i]->x = vResult.x;
+        normals[i]->y = vResult.y;
+        normals[i]->z = vResult.z;
+        delete res4;
+        delete res5;
+        delete res6;
+      }
+    }
     vector t1(vertices[1]->x-vertices[0]->x, vertices[1]->y-vertices[0]->y, vertices[1]->z-vertices[0]->z);
     vector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
     vector *t3 = t1 * t2;
@@ -233,7 +359,7 @@ class triangle
 
   }
 
-  triangle(point& p1, point& p2, point& p3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL)
+  triangle(point& p1, point& p2, point& p3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL, bool rotate=false)
   {
     vertices[0] = new point(p1.x, p1.y, p1.z);
     vertices[1] = new point(p2.x, p2.y, p2.z);
@@ -252,17 +378,40 @@ class triangle
     else
       colorAdded=false;
 
-
+    if (rotate)
+    {
+      for(int i=0; i<3;i++)
+      {
+        matrix m1, m2, m3, m4;
+        m1.translate(-vertices[i]->x, -vertices[i]->y, -vertices[i]->z);
+        m2.rotateAroundX(3.1416/4.0);
+        m3.rotateAroundY(3.1416/4.0);
+        m4.translate(vertices[i]->x, vertices[i]->y, vertices[i]->z);
+        matrix* res1 = m1 * m2;
+        matrix* res2 = *res1 * m3;
+        matrix* res3 = *res2 * m4;
+        point result;
+        res3->operate<point>(*vertices[i], result);
+        vertices[i]->x = result.x;
+        vertices[i]->y = result.y;
+        vertices[i]->z = result.z;
+        delete res1;
+        delete res2;
+        delete res3;
+      }
+    }
+    
     vector t1(vertices[1]->x-vertices[0]->x, vertices[1]->y-vertices[0]->y, vertices[1]->z-vertices[0]->z);
     vector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
     vector *t3 = t1 * t2;
     triangleNormal = new vector(t3->x, t3->y, t3->z);
     triangleNormal->scalarMultiply(1.0/triangleNormal->length());
 
-
     normals[0] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
     normals[1] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
     normals[2] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
+
+    
   }
 
   ~triangle()
@@ -699,7 +848,7 @@ void initLight(int option)
   else
   {
     if(option == 1 || option == 3)
-      lightPosition = new point(250,250,-60);
+      lightPosition = new point(300,300,-25);
     if(option>1)
     {
       lightDirection = new vector(115,20,-120);
@@ -713,14 +862,14 @@ void initMeshes(int option)
   if (option ==1)
   {
     numOfMeshes=12;
-    point p1(250, 250, -100);
+    point p1(250, 250, -200);
     point p2(250, 250, -50);
-    point p3(250, 300, -100);
-    point p4(250, 300, -50);
-    point p5(300, 250, -100);
-    point p6(300, 250, -50);
-    point p7(300, 300, -100);
-    point p8(300, 300, -50);
+    point p3(250, 400, -200);
+    point p4(250, 400, -50);
+    point p5(400, 250, -200);
+    point p6(400, 250, -50);
+    point p7(400, 400, -200);
+    point p8(400, 400, -50);
 
     vector v1(0,0,1);
     vector v2(0,0,-1);
@@ -729,33 +878,34 @@ void initMeshes(int option)
     vector v5(1,0,0);
     vector v6(-1,0,0);
 
+    float* dummy = NULL;
     tObjs = (triangle**)malloc(sizeof(triangle*) * numOfMeshes);
-    tObjs[0] = new triangle(p1, p7, p5, v2, v2, v2);
-    tObjs[1] = new triangle(p1, p3, p7, v2, v2, v2);
-    tObjs[2] = new triangle(p1, p4, p3, v6, v6, v6);
-    tObjs[3] = new triangle(p1, p2, p4, v6, v6, v6);
-    tObjs[4] = new triangle(p3, p8, p7, v3, v3, v3);
-    tObjs[5] = new triangle(p3, p4, p8, v3, v3, v3);
-    tObjs[6] = new triangle(p5, p7, p8, v5, v5, v5);
-    tObjs[7] = new triangle(p5, p8, p6, v5, v5, v5);
-    tObjs[8] = new triangle(p1, p5, p6, v4, v4, v4);
-    tObjs[9] = new triangle(p1, p6, p2, v4, v4, v4);
-    tObjs[10] = new triangle(p2, p6, p8, v1, v1, v1);
-    tObjs[11] = new triangle(p2, p8, p4, v1, v1, v1);
+    tObjs[0] = new triangle(p1, p7, p5, v2, v2, v2, dummy, dummy, dummy, true);
+    tObjs[1] = new triangle(p1, p3, p7, v2, v2, v2, dummy, dummy, dummy, true);
+    tObjs[2] = new triangle(p1, p4, p3, v6, v6, v6, dummy, dummy, dummy, true);
+    tObjs[3] = new triangle(p1, p2, p4, v6, v6, v6, dummy, dummy, dummy, true);
+    tObjs[4] = new triangle(p3, p8, p7, v3, v3, v3, dummy, dummy, dummy, true);
+    tObjs[5] = new triangle(p3, p4, p8, v3, v3, v3, dummy, dummy, dummy, true);
+    tObjs[6] = new triangle(p5, p7, p8, v5, v5, v5, dummy, dummy, dummy, true);
+    tObjs[7] = new triangle(p5, p8, p6, v5, v5, v5, dummy, dummy, dummy, true);
+    tObjs[8] = new triangle(p1, p5, p6, v4, v4, v4, dummy, dummy, dummy, true);
+    tObjs[9] = new triangle(p1, p6, p2, v4, v4, v4, dummy, dummy, dummy, true);
+    tObjs[10] = new triangle(p2, p6, p8, v1, v1, v1, dummy, dummy, dummy, true);
+    tObjs[11] = new triangle(p2, p8, p4, v1, v1, v1, dummy, dummy, dummy, true);
   }
   else
   {
     numOfMeshes=4;
-    point p1(250, 250, -100);
-    point p2(300, 250, -100);
-    point p3(250, 300, -100);
+    point p1(250, 250, -200);
+    point p2(400, 250, -200);
+    point p3(250, 400, -200);
     point p4(250, 250, -50);
-
+    float* dummy = NULL;
     tObjs = (triangle**)malloc(sizeof(triangle*) * numOfMeshes);
-    tObjs[0] = new triangle(p1, p3, p2);
-    tObjs[1] = new triangle(p1, p4, p3);
-    tObjs[2] = new triangle(p1, p2, p4);
-    tObjs[3] = new triangle(p2, p3, p4);
+    tObjs[0] = new triangle(p1, p3, p2, dummy, dummy, dummy, true);
+    tObjs[1] = new triangle(p1, p4, p3, dummy, dummy, dummy, true);
+    tObjs[2] = new triangle(p1, p2, p4, dummy, dummy, dummy, true);
+    tObjs[3] = new triangle(p2, p3, p4, dummy, dummy, dummy, true);
   }
 }
 
@@ -834,7 +984,7 @@ bool liesInside(point& hitpoint, triangle& tObj)
 
   computeTriangleValues(hitpoint, tObj, max, val1, val2, val3);
 
-  if (val1/max > 0 && val2/max > 0 && val3/max > 0 && (val1/max + val2/max + val3/max == 1.0))
+  if (val1/max > 0 && val2/max > 0 && val3/max > 0 && (val1/max + val2/max + val3/max >= 0.99) && (val1/max + val2/max + val3/max <= 1.01))
     return true;
   return false;
 }
@@ -847,8 +997,8 @@ void computeParameters(triangle& tObj, point& hitpoint, vector& normal, float te
   computeTriangleValues(hitpoint, tObj, max, val1, val2, val3);
 
   normal.x = tObj.normals[0]->x * (val1/max) + tObj.normals[1]->x * (val2/max) + tObj.normals[2]->x * (val3/max);
-  normal.x = tObj.normals[0]->y * (val1/max) + tObj.normals[1]->y * (val2/max) + tObj.normals[2]->y * (val3/max);
-  normal.x = tObj.normals[0]->z * (val1/max) + tObj.normals[1]->z * (val2/max) + tObj.normals[2]->z * (val3/max);
+  normal.y = tObj.normals[0]->y * (val1/max) + tObj.normals[1]->y * (val2/max) + tObj.normals[2]->y * (val3/max);
+  normal.z = tObj.normals[0]->z * (val1/max) + tObj.normals[1]->z * (val2/max) + tObj.normals[2]->z * (val3/max);
 
   if (tex)
   {
@@ -985,6 +1135,11 @@ void applyRasterization()
             normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
             getColor(planeColor, lightColor, lightPos, normalAtPoint, *npe, hitPoint); 
             ambient=planeColor;
+            double redVal, greenVal, blueVal;
+            ambient.getResult(redVal, greenVal, blueVal);
+            rChannel+=redVal;
+            gChannel+=greenVal;
+            bChannel+=blueVal;
           }
           else
           {
