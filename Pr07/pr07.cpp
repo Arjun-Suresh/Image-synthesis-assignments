@@ -848,7 +848,7 @@ void initLight(int option)
   else
   {
     if(option == 1 || option == 3)
-      lightPosition = new point(300,300,-25);
+      lightPosition = new point(150,150,0);
     if(option>1)
     {
       lightDirection = new vector(115,20,-120);
@@ -862,50 +862,43 @@ void initMeshes(int option)
   if (option ==1)
   {
     numOfMeshes=12;
-    point p1(250, 250, -200);
-    point p2(250, 250, -50);
-    point p3(250, 400, -200);
-    point p4(250, 400, -50);
-    point p5(400, 250, -200);
-    point p6(400, 250, -50);
-    point p7(400, 400, -200);
-    point p8(400, 400, -50);
-
-    vector v1(0,0,1);
-    vector v2(0,0,-1);
-    vector v3(0,1,0);
-    vector v4(0,-1,0);
-    vector v5(1,0,0);
-    vector v6(-1,0,0);
+    point p1(182, 251, -150);
+    point p2(182, 251, -50);
+    point p3(252, 181, -50);
+    point p4(252, 181, -150);
+    point p5(111, 181, -50);
+    point p6(111, 181, -150);
+    point p7(182, 110 , -150);
+    point p8(182, 110, -50);
 
     float* dummy = NULL;
     tObjs = (triangle**)malloc(sizeof(triangle*) * numOfMeshes);
-    tObjs[0] = new triangle(p1, p7, p5, v2, v2, v2, dummy, dummy, dummy, true);
-    tObjs[1] = new triangle(p1, p3, p7, v2, v2, v2, dummy, dummy, dummy, true);
-    tObjs[2] = new triangle(p1, p4, p3, v6, v6, v6, dummy, dummy, dummy, true);
-    tObjs[3] = new triangle(p1, p2, p4, v6, v6, v6, dummy, dummy, dummy, true);
-    tObjs[4] = new triangle(p3, p8, p7, v3, v3, v3, dummy, dummy, dummy, true);
-    tObjs[5] = new triangle(p3, p4, p8, v3, v3, v3, dummy, dummy, dummy, true);
-    tObjs[6] = new triangle(p5, p7, p8, v5, v5, v5, dummy, dummy, dummy, true);
-    tObjs[7] = new triangle(p5, p8, p6, v5, v5, v5, dummy, dummy, dummy, true);
-    tObjs[8] = new triangle(p1, p5, p6, v4, v4, v4, dummy, dummy, dummy, true);
-    tObjs[9] = new triangle(p1, p6, p2, v4, v4, v4, dummy, dummy, dummy, true);
-    tObjs[10] = new triangle(p2, p6, p8, v1, v1, v1, dummy, dummy, dummy, true);
-    tObjs[11] = new triangle(p2, p8, p4, v1, v1, v1, dummy, dummy, dummy, true);
+    tObjs[0] = new triangle(p1, p2, p3);
+    tObjs[1] = new triangle(p1, p3, p4);
+    tObjs[2] = new triangle(p5, p6, p7);
+    tObjs[3] = new triangle(p5, p7, p8);
+    tObjs[4] = new triangle(p2, p5, p8);
+    tObjs[5] = new triangle(p2, p8, p3);
+    tObjs[6] = new triangle(p4, p7, p6);
+    tObjs[7] = new triangle(p4, p6, p1);
+    tObjs[8] = new triangle(p2, p1, p6);
+    tObjs[9] = new triangle(p2, p6, p5);
+    tObjs[10] = new triangle(p8, p7, p4);
+    tObjs[11] = new triangle(p8, p4, p3);
   }
   else
   {
     numOfMeshes=4;
-    point p1(250, 250, -200);
-    point p2(400, 250, -200);
-    point p3(250, 400, -200);
-    point p4(250, 250, -50);
+    point p1(250, 230.164, -74);
+    point p2(188, 240, -74);
+    point p3(204.917, 222, -74);
+    point p4(204.917, 222, -345);
     float* dummy = NULL;
     tObjs = (triangle**)malloc(sizeof(triangle*) * numOfMeshes);
-    tObjs[0] = new triangle(p1, p3, p2, dummy, dummy, dummy, true);
-    tObjs[1] = new triangle(p1, p4, p3, dummy, dummy, dummy, true);
-    tObjs[2] = new triangle(p1, p2, p4, dummy, dummy, dummy, true);
-    tObjs[3] = new triangle(p2, p3, p4, dummy, dummy, dummy, true);
+    tObjs[0] = new triangle(p1, p2, p3);
+    tObjs[1] = new triangle(p4, p3, p1);
+    tObjs[2] = new triangle(p1, p2, p4);
+    tObjs[3] = new triangle(p2, p3, p4);
   }
 }
 
