@@ -844,7 +844,7 @@ void initLight(int option)
   else if(option == 2)
     lightPosition = new point(100,200,-70);
   else
-    lightPosition = new point(500,300,50);
+    lightPosition = new point(100,160,-50);
 }
 
 void initMeshes(int option)
@@ -950,10 +950,10 @@ void initMeshFromFile(int option)
       t3[0] = curMesh.Vertices[curMesh.Indices[j+2]].TextureCoordinate.X;
       t3[1] = curMesh.Vertices[curMesh.Indices[j+2]].TextureCoordinate.Y;
 
-      tObjs[j/3] = new triangle(p1, p3, p2, v1, v3, v2, t1, t3, t2);
+      tObjs[j/3] = new triangle(p1, p2, p3, v1, v2, v3, t1, t2, t3);
     }
     else
-      tObjs[j/3] = new triangle(p1, p3, p2, v1, v3, v2);
+      tObjs[j/3] = new triangle(p1, p2, p3, v1, v2, v3);
   }
 }
 
@@ -1132,7 +1132,6 @@ void applyRasterization()
       double rChannel=0, gChannel=0, bChannel=0;
       double randomValX = ((double)rand() / (double)RAND_MAX)/4;
       double randomValY = ((double)rand() / (double)RAND_MAX)/4;
-      cout<<i<<" "<<j<<endl;
       for(int m=0;m<4;m++)
       {
         for(int l=0;l<4;l++)
