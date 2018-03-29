@@ -839,22 +839,11 @@ void initEnvironment()
 
 void initLight(int option)
 {
-  if (option == 4)
-  {
-    lightCorner = new point(150,270,55);
-    lightN0 = new vector(1,0,0);
-    lightN1 = new vector(0,1,0);
-  }
+  
+  if(option == 1)
+    lightPosition = new point(150,150,0);
   else
-  {
-    if(option == 1 || option == 3)
-      lightPosition = new point(150,150,0);
-    if(option>1)
-    {
-      lightDirection = new vector(115,20,-120);
-      lightDirection->scalarMultiply(1.0/lightDirection->length());
-    }
-  }
+    lightPosition = new point(230,200,50);
 }
 
 void initMeshes(int option)
@@ -889,10 +878,10 @@ void initMeshes(int option)
   else
   {
     numOfMeshes=4;
-    point p1(250, 230.164, -74);
-    point p2(188, 240, -74);
-    point p3(204.917, 222, -74);
-    point p4(204.917, 222, -345);
+    point p1(286, 163, -111);
+    point p2(97, 158, -110);
+    point p3(184, 360, -110);
+    point p4(167, 149, -71);
     float* dummy = NULL;
     tObjs = (triangle**)malloc(sizeof(triangle*) * numOfMeshes);
     tObjs[0] = new triangle(p1, p2, p3);
@@ -1060,13 +1049,13 @@ void applyRasterization()
   cout<<"Enter:\n1. Without obj file\n2. With obj file\n";
   int option;
   cin>>option;
-  initLight(1);
   if (option == 1)
   {
     cout << "Enter:\n1. Cube\n2. Tetrahedron\n";
     int value;
     cin>>value;
     initMeshes(value);
+    initLight(value);
   }
 
   point* testPoint = new point(0,0,0);
