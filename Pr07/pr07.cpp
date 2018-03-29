@@ -42,7 +42,7 @@
 #define MAXANGLE 1.0
 #define MINREFLECTION 0.9
 #define MAXREFLECTION 1.0
-#define KD 5
+#define KD 10
 #define KS 10
 #define KB 0
 
@@ -844,7 +844,7 @@ void initLight(int option)
   else if(option == 2)
     lightPosition = new point(100,200,-70);
   else
-    lightPosition = new point(300,300,0);
+    lightPosition = new point(500,300,50);
 }
 
 void initMeshes(int option)
@@ -950,10 +950,10 @@ void initMeshFromFile(int option)
       t3[0] = curMesh.Vertices[curMesh.Indices[j+2]].TextureCoordinate.X;
       t3[1] = curMesh.Vertices[curMesh.Indices[j+2]].TextureCoordinate.Y;
 
-      tObjs[j/3] = new triangle(p1, p2, p3, v1, v2, v3, t1, t2, t3);
+      tObjs[j/3] = new triangle(p1, p3, p2, v1, v3, v2, t1, t3, t2);
     }
     else
-      tObjs[j/3] = new triangle(p1, p2, p3, v1, v2, v3);
+      tObjs[j/3] = new triangle(p1, p3, p2, v1, v3, v2);
   }
 }
 
