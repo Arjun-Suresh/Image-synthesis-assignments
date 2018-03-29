@@ -409,9 +409,7 @@ class triangle
 
     normals[0] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
     normals[1] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
-    normals[2] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
-
-    
+    normals[2] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);    
   }
 
   ~triangle()
@@ -843,7 +841,7 @@ void initLight(int option)
   if(option == 1)
     lightPosition = new point(150,150,0);
   else
-    lightPosition = new point(230,200,50);
+    lightPosition = new point(200,200,-50);
 }
 
 void initMeshes(int option)
@@ -884,10 +882,10 @@ void initMeshes(int option)
     point p4(167, 149, -71);
     float* dummy = NULL;
     tObjs = (triangle**)malloc(sizeof(triangle*) * numOfMeshes);
-    tObjs[0] = new triangle(p1, p2, p3);
-    tObjs[1] = new triangle(p4, p3, p1);
-    tObjs[2] = new triangle(p1, p2, p4);
-    tObjs[3] = new triangle(p2, p3, p4);
+    tObjs[0] = new triangle(p1, p3, p2);
+    tObjs[1] = new triangle(p1, p3, p4);
+    tObjs[2] = new triangle(p1, p4, p2);
+    tObjs[3] = new triangle(p2, p4, p3);
   }
 }
 
