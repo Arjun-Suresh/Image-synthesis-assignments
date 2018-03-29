@@ -15,6 +15,7 @@
 #include <sstream>
 #include <cstring>
 #include <malloc.h>
+#include "OBJ_Loader.h"
 
 
 #define WIDTHVALUEID 1
@@ -841,7 +842,7 @@ void initLight(int option)
   if(option == 1)
     lightPosition = new point(150,150,0);
   else
-    lightPosition = new point(200,200,-50);
+    lightPosition = new point(100,200,-70);
 }
 
 void initMeshes(int option)
