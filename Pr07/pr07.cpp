@@ -74,19 +74,19 @@ class point
 };
 
 
-class vector
+class gVector
 {  
   public:
   double x;
   double y;
   double z;
-  vector(){}
-  vector(double xVal, double yVal, double zVal)
+  gVector(){}
+  gVector(double xVal, double yVal, double zVal)
   {
     x=xVal, y=yVal, z=zVal;
   }
 
-  vector(const vector& v)
+  gVector(const gVector& v)
   {
     x = v.x;
     y = v.y;
@@ -99,15 +99,15 @@ class vector
     return sqrt(dist);
   }
   
-  vector* operator * (const vector& vObj)
+  gVector* operator * (const gVector& vObj)
   {
     double xVal = y*vObj.z-z*vObj.y;
     double yVal = z*vObj.x-x*vObj.z;
     double zVal = x*vObj.y-y*vObj.x;
-    return new vector(xVal, yVal, zVal);
+    return new gVector(xVal, yVal, zVal);
   }
 
-  double dotProduct(const vector& vObj)
+  double dotProduct(const gVector& vObj)
   {
     return x*vObj.x+y*vObj.y+z*vObj.z;
   }
@@ -117,20 +117,20 @@ class vector
     x=x*val, y=y*val, z=z*val;
   } 
   
-  vector* operator + (const vector& vObj)
+  gVector* operator + (const gVector& vObj)
   {
     double xVal = x+vObj.x;
     double yVal = y+vObj.y;
     double zVal = z+vObj.z;
-    return new vector(xVal, yVal, zVal);
+    return new gVector(xVal, yVal, zVal);
   }
   
-  vector* operator - (const vector& vObj)
+  gVector* operator - (const gVector& vObj)
   {
     double xVal = x-vObj.x;
     double yVal = y-vObj.y;
     double zVal = z-vObj.z;
-    return new vector(xVal, yVal, zVal);
+    return new gVector(xVal, yVal, zVal);
   }   
 };
 
@@ -288,20 +288,20 @@ class triangle
 {
   public:
   point* vertices[3];
-  vector* normals[3];
-  vector* triangleNormal;
+  gVector* normals[3];
+  gVector* triangleNormal;
   float texture[3][2];
   bool colorAdded;
 
-  triangle(point& p1, point& p2, point& p3, vector& v1, vector& v2, vector& v3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL, bool rotate=false)
+  triangle(point& p1, point& p2, point& p3, gVector& v1, gVector& v2, gVector& v3, float tex1[2] = NULL, float tex2[2] = NULL, float tex3[2] = NULL, bool rotate=false)
   {
     vertices[0] = new point(p1.x, p1.y, p1.z);
     vertices[1] = new point(p2.x, p2.y, p2.z);
     vertices[2] = new point(p3.x, p3.y, p3.z);
 
-    normals[0] = new vector(v1.x, v1.y, v1.z);
-    normals[1] = new vector(v2.x, v2.y, v2.z);
-    normals[2] = new vector(v3.x, v3.y, v3.z);
+    normals[0] = new gVector(v1.x, v1.y, v1.z);
+    normals[1] = new gVector(v2.x, v2.y, v2.z);
+    normals[2] = new gVector(v3.x, v3.y, v3.z);
 
     if (tex1 && tex2 && tex3)
     {
@@ -342,8 +342,8 @@ class triangle
         matrix* res4 = m1 * m2;
         matrix* res5 = *res4 * m3;
         matrix* res6 = *res5 * m4;
-        vector vResult;
-        res6->operate<vector>(*normals[i], vResult);
+        gVector vResult;
+        res6->operate<gVector>(*normals[i], vResult);
         normals[i]->x = vResult.x;
         normals[i]->y = vResult.y;
         normals[i]->z = vResult.z;
@@ -352,10 +352,10 @@ class triangle
         delete res6;
       }
     }
-    vector t1(vertices[1]->x-vertices[0]->x, vertices[1]->y-vertices[0]->y, vertices[1]->z-vertices[0]->z);
-    vector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
-    vector *t3 = t1 * t2;
-    triangleNormal = new vector(t3->x, t3->y, t3->z);
+    gVector t1(vertices[1]->x-vertices[0]->x, vertices[1]->y-vertices[0]->y, vertices[1]->z-vertices[0]->z);
+    gVector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
+    gVector *t3 = t1 * t2;
+    triangleNormal = new gVector(t3->x, t3->y, t3->z);
     triangleNormal->scalarMultiply(1.0/triangleNormal->length());
 
   }
@@ -402,15 +402,15 @@ class triangle
       }
     }
     
-    vector t1(vertices[1]->x-vertices[0]->x, vertices[1]->y-vertices[0]->y, vertices[1]->z-vertices[0]->z);
-    vector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
-    vector *t3 = t1 * t2;
-    triangleNormal = new vector(t3->x, t3->y, t3->z);
+    gVector t1(vertices[1]->x-vertices[0]->x, vertices[1]->y-vertices[0]->y, vertices[1]->z-vertices[0]->z);
+    gVector t2(vertices[2]->x-vertices[0]->x, vertices[2]->y-vertices[0]->y, vertices[2]->z-vertices[0]->z);
+    gVector *t3 = t1 * t2;
+    triangleNormal = new gVector(t3->x, t3->y, t3->z);
     triangleNormal->scalarMultiply(1.0/triangleNormal->length());
 
-    normals[0] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
-    normals[1] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
-    normals[2] = new vector(triangleNormal->x, triangleNormal->y, triangleNormal->z);    
+    normals[0] = new gVector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
+    normals[1] = new gVector(triangleNormal->x, triangleNormal->y, triangleNormal->z);
+    normals[2] = new gVector(triangleNormal->x, triangleNormal->y, triangleNormal->z);    
   }
 
   ~triangle()
@@ -427,17 +427,17 @@ point *pc, *p0, *pe; //Field of view and eye
 point* spheres[2], *cylinder, *plane00; //Shapes to be rendered- spheres and plane
 double radius[2]; //radius of 2 spheres
 double d; //distance between field of view and the eye
-vector *n2, *n1, *n0; //field of view related normal vectors
-vector *planeN0, *planeN1, *planeN2; //vectors of an external plane which is rendered
+gVector *n2, *n1, *n0; //field of view related normal gVectors
+gVector *planeN0, *planeN1, *planeN2; //gVectors of an external plane which is rendered
 
 point* lightPosition; //Only for point and spot light
-vector* lightDirection; //Only for spot and direction light
+gVector* lightDirection; //Only for spot and direction light
 point* lightCorner;
-vector* lightN0, *lightN1; //For area light
+gVector* lightN0, *lightN1; //For area light
 
 point *ppc, *pp0, *ppe; //Field of view and eye
 double pd; //distance between field of view and the eye
-vector *pn2, *pn1, *pn0; //field of view related normal vectors
+gVector *pn2, *pn1, *pn0; //field of view related normal gVectors
 
 triangle** tObjs;
 int numOfMeshes;
@@ -784,9 +784,9 @@ void generatePPMFile()
 //*************************************Rasterization functions*****************************************
 //*****************************************************************************************************
 
-bool sphereIntersection(point* center, point* pe, double radius, vector* npe, double& t)
+bool sphereIntersection(point* center, point* pe, double radius, gVector* npe, double& t)
 {
-  vector* pce = new vector(center->x - pe->x, center->y - pe->y, center->z - pe->z);
+  gVector* pce = new gVector(center->x - pe->x, center->y - pe->y, center->z - pe->z);
   double c = pow(pce->length(),2) - pow(radius,2);
   double b = pce->dotProduct(*npe);
   double delta = pow(b,2) - c;
@@ -799,9 +799,9 @@ bool sphereIntersection(point* center, point* pe, double radius, vector* npe, do
   return true;
 }
 
-bool planeIntersection(point* corner, point* pe, vector* normal, vector* npe, double& t)
+bool planeIntersection(point* corner, point* pe, gVector* normal, gVector* npe, double& t)
 {
-  vector* test = new vector(pe->x - corner->x, pe->y - corner->y, pe->z - corner->z);
+  gVector* test = new gVector(pe->x - corner->x, pe->y - corner->y, pe->z - corner->z);
   if (normal->dotProduct(*npe) == 0)
     return false;
   t = -1*((normal->dotProduct(*test))/(normal->dotProduct(*npe)));
@@ -822,10 +822,10 @@ void clamp(double& value, double min, double max)
 void initEnvironment()
 {
   d=50;
-  n2 = new vector(0,0,-1);
+  n2 = new gVector(0,0,-1);
   pe = new point (250, 250, 150);
   pc = new point (pe->x+(n2->x)*d,pe->y+(n2->y)*d,pe->z+(n2->z)*d);
-  vector* Vref = new vector(0, 1, 2);
+  gVector* Vref = new gVector(0, 1, 2);
   Vref->scalarMultiply(((double)1)/Vref->length());
   
   n0 = (*n2) * (*Vref);
@@ -841,8 +841,10 @@ void initLight(int option)
   
   if(option == 1)
     lightPosition = new point(150,150,0);
-  else
+  else if(option == 2)
     lightPosition = new point(100,200,-70);
+  else
+    lightPosition = new point(300,300,0);
 }
 
 void initMeshes(int option)
@@ -899,6 +901,62 @@ double clamp(double val)
   return val;
 }
 
+void initMeshFromFile(int option)
+{
+  char meshFile[100];
+  cout<<"Enter the name of obj file\n";
+  cin>>meshFile;
+  objl::Loader Loader;
+	bool loadout = Loader.LoadFile(meshFile);
+	if (!loadout)
+	{
+    cout<<"Obj file doesn't exist\n";
+    exit(0);
+  }
+	objl::Mesh curMesh = Loader.LoadedMeshes[0];
+  numOfMeshes =curMesh.Indices.size()/3;
+  tObjs = (triangle**)malloc(sizeof(triangle*) * numOfMeshes);
+  int k1=0, k2=0, k3=0;
+  
+	for (int j = 0; j < curMesh.Indices.size(); j+=3)
+	{
+	  if (curMesh.Vertices[curMesh.Indices[j]].Position.X < 100)
+            k1=200;
+          if (curMesh.Vertices[curMesh.Indices[j]].Position.Y < 100)
+            k2=200;
+          if (curMesh.Vertices[curMesh.Indices[j]].Position.Z > -50)
+            k3=-200;
+          if (k1 && k2 && k3)
+            break;
+        }
+	for (int j = 0; j < curMesh.Indices.size(); j+=3)
+	{
+	  point p1(curMesh.Vertices[curMesh.Indices[j]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j]].Position.Z+k3);
+    point p2(curMesh.Vertices[curMesh.Indices[j+1]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j+1]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j+1]].Position.Z+k3);
+    point p3(curMesh.Vertices[curMesh.Indices[j+2]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j+2]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j+2]].Position.Z+k3);
+    
+    gVector v1(curMesh.Vertices[curMesh.Indices[j]].Normal.X, curMesh.Vertices[curMesh.Indices[j]].Normal.Y, curMesh.Vertices[curMesh.Indices[j]].Normal.Z);
+    gVector v2(curMesh.Vertices[curMesh.Indices[j+1]].Normal.X, curMesh.Vertices[curMesh.Indices[j+1]].Normal.Y, curMesh.Vertices[curMesh.Indices[j+1]].Normal.Z);
+    gVector v3(curMesh.Vertices[curMesh.Indices[j+2]].Normal.X, curMesh.Vertices[curMesh.Indices[j+2]].Normal.Y, curMesh.Vertices[curMesh.Indices[j+2]].Normal.Z);
+    if (option == 2)
+    {
+      float t1[2], t2[2], t3[2];
+      t1[0] = curMesh.Vertices[curMesh.Indices[j]].TextureCoordinate.X;
+      t1[1] = curMesh.Vertices[curMesh.Indices[j]].TextureCoordinate.Y;
+
+      t2[0] = curMesh.Vertices[curMesh.Indices[j+1]].TextureCoordinate.X;
+      t2[1] = curMesh.Vertices[curMesh.Indices[j+1]].TextureCoordinate.Y;
+
+      t3[0] = curMesh.Vertices[curMesh.Indices[j+2]].TextureCoordinate.X;
+      t3[1] = curMesh.Vertices[curMesh.Indices[j+2]].TextureCoordinate.Y;
+
+      tObjs[j/3] = new triangle(p1, p2, p3, v1, v2, v3, t1, t2, t3);
+    }
+    else
+      tObjs[j/3] = new triangle(p1, p2, p3, v1, v2, v3);
+  }
+}
+
 float abs(float val)
 {
   if (val < 0)
@@ -922,16 +980,16 @@ float maxAbs(float a, float b, float c)
 
 void computeTriangleValues(point& hitpoint, triangle& tObj, float& max, float& val1, float& val2, float& val3)
 {
-  vector v1(tObj.vertices[0]->x-hitpoint.x, tObj.vertices[0]->y-hitpoint.y, tObj.vertices[0]->z-hitpoint.z);
-  vector v2(tObj.vertices[1]->x-hitpoint.x, tObj.vertices[1]->y-hitpoint.y, tObj.vertices[1]->z-hitpoint.z);
-  vector v3(tObj.vertices[2]->x-hitpoint.x, tObj.vertices[2]->y-hitpoint.y, tObj.vertices[2]->z-hitpoint.z);
+  gVector v1(tObj.vertices[0]->x-hitpoint.x, tObj.vertices[0]->y-hitpoint.y, tObj.vertices[0]->z-hitpoint.z);
+  gVector v2(tObj.vertices[1]->x-hitpoint.x, tObj.vertices[1]->y-hitpoint.y, tObj.vertices[1]->z-hitpoint.z);
+  gVector v3(tObj.vertices[2]->x-hitpoint.x, tObj.vertices[2]->y-hitpoint.y, tObj.vertices[2]->z-hitpoint.z);
 
-  vector* a1 = v2 * v3;
-  vector* a2 = v3 * v1;
-  vector* a3 = v1 * v2;
-  vector t1(tObj.vertices[1]->x-tObj.vertices[0]->x, tObj.vertices[1]->y-tObj.vertices[0]->y, tObj.vertices[1]->z-tObj.vertices[0]->z);
-  vector t2(tObj.vertices[2]->x-tObj.vertices[0]->x, tObj.vertices[2]->y-tObj.vertices[0]->y, tObj.vertices[2]->z-tObj.vertices[0]->z);
-  vector *a = t1 * t2;
+  gVector* a1 = v2 * v3;
+  gVector* a2 = v3 * v1;
+  gVector* a3 = v1 * v2;
+  gVector t1(tObj.vertices[1]->x-tObj.vertices[0]->x, tObj.vertices[1]->y-tObj.vertices[0]->y, tObj.vertices[1]->z-tObj.vertices[0]->z);
+  gVector t2(tObj.vertices[2]->x-tObj.vertices[0]->x, tObj.vertices[2]->y-tObj.vertices[0]->y, tObj.vertices[2]->z-tObj.vertices[0]->z);
+  gVector *a = t1 * t2;
 
   max = maxAbs(a->x, a->y, a->z);
   if (max == a->x)
@@ -970,7 +1028,7 @@ bool liesInside(point& hitpoint, triangle& tObj)
   return false;
 }
 
-void computeParameters(triangle& tObj, point& hitpoint, vector& normal, float tex[2]=NULL)
+void computeParameters(triangle& tObj, point& hitpoint, gVector& normal, float tex[2]=NULL)
 {
   float max;
   float val1, val2, val3;
@@ -988,22 +1046,22 @@ void computeParameters(triangle& tObj, point& hitpoint, vector& normal, float te
   }
 }
 
-void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vector& nh, vector& npe, point& hitPoint)
+void getColor(color& surfaceColor, color& lightColor, point* lightPosition, gVector& nh, gVector& npe, point& hitPoint)
 {
   double d, s, b;
   
-  vector lightVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
-  double distance = lightVector.length();
-  lightVector.scalarMultiply(1.0/distance);
+  gVector lightgVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
+  double distance = lightgVector.length();
+  lightgVector.scalarMultiply(1.0/distance);
     
   double t;
   bool shadow=false;
   
   for (int k=0; k<numOfMeshes; k++)
   {
-    if (planeIntersection(tObjs[k]->vertices[0], &hitPoint, tObjs[k]->triangleNormal, &lightVector, t))
+    if (planeIntersection(tObjs[k]->vertices[0], &hitPoint, tObjs[k]->triangleNormal, &lightgVector, t))
     {
-      point intersect(hitPoint.x+(lightVector.x*t),hitPoint.y+(lightVector.y*t),hitPoint.z+(lightVector.z*t));
+      point intersect(hitPoint.x+(lightgVector.x*t),hitPoint.y+(lightgVector.y*t),hitPoint.z+(lightgVector.z*t));
       if (liesInside(intersect, *tObjs[k]) && t>0 && t<=distance)
       {
         shadow=true;
@@ -1014,13 +1072,13 @@ void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vect
   
   if (shadow)
     return;
-  double res = lightVector.dotProduct(nh);
+  double res = lightgVector.dotProduct(nh);
   if (res<0.2)
     d=0;
   else
   d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
 
-  vector reflection(-lightVector.x+2*res*nh.x,-lightVector.y+2*res*nh.y,-lightVector.z+2*res*nh.z);
+  gVector reflection(-lightgVector.x+2*res*nh.x,-lightgVector.y+2*res*nh.y,-lightgVector.z+2*res*nh.z);
   reflection.scalarMultiply(-1.0/reflection.length());
   double reflectValue = npe.dotProduct(reflection);
   if (reflectValue < 0.95)
@@ -1056,7 +1114,14 @@ void applyRasterization()
     initMeshes(value);
     initLight(value);
   }
-
+  else
+  {
+    cout << "Enter:\n1. without texture\n2. With texture\n";
+    int value;
+    cin >> value;
+    initMeshFromFile(value);
+    initLight(3);
+  }
   point* testPoint = new point(0,0,0);
   point* lightPos = new point(0,0,0);
   color lightColor(10,10,10,10);
@@ -1064,10 +1129,10 @@ void applyRasterization()
   {
     for(int i=0;i<widthComputed;i++)
     {
-      cout<<i<<" "<<j<<endl;
       double rChannel=0, gChannel=0, bChannel=0;
       double randomValX = ((double)rand() / (double)RAND_MAX)/4;
       double randomValY = ((double)rand() / (double)RAND_MAX)/4;
+      cout<<i<<" "<<j<<endl;
       for(int m=0;m<4;m++)
       {
         for(int l=0;l<4;l++)
@@ -1077,7 +1142,7 @@ void applyRasterization()
       	  testPoint->x = p0->x + (n0->x)*SX*(x/widthComputed) + (n1->x)*SY*(y/heightComputed);
           testPoint->y = p0->y + (n0->y)*SX*(x/widthComputed) + (n1->y)*SY*(y/heightComputed);
           testPoint->z = p0->z + (n0->z)*SX*(x/widthComputed) + (n1->z)*SY*(y/heightComputed);
-          vector* npe = new vector(testPoint->x-pe->x,testPoint->y-pe->y,testPoint->z-pe->z);
+          gVector* npe = new gVector(testPoint->x-pe->x,testPoint->y-pe->y,testPoint->z-pe->z);
           double fieldLength = npe->length();
           npe->scalarMultiply(((double)1)/fieldLength);
           double tMin = 99999;
@@ -1105,15 +1170,28 @@ void applyRasterization()
           if (changedValue)
           {
             int red, green, blue;
+            
+            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
+            gVector normalAtPoint;
+            float texture[2];
+            computeParameters(*tObjs[shape], hitPoint, normalAtPoint, texture);
+            normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
+
             if (!tObjs[shape]->colorAdded)
             {
               red = 20, green = 90, blue = 70;
             }
+            else
+            {
+              int xVal = texture[0]*width[0];
+              int yVal = texture[1]*height[0];
+              int num = ((yVal*width[0])+xVal)*3;
+              red = pixmapOrig[0][num++];
+              green = pixmapOrig[0][num++];
+              blue = pixmapOrig[0][num];
+            }
+            
             color planeColor(red, green, blue, 255);
-            point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
-            vector normalAtPoint;
-            computeParameters(*tObjs[shape], hitPoint, normalAtPoint);
-            normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
             getColor(planeColor, lightColor, lightPos, normalAtPoint, *npe, hitPoint); 
             ambient=planeColor;
             double redVal, greenVal, blueVal;
@@ -1138,7 +1216,7 @@ void applyRasterization()
       bVal = (int)((bChannel/16.0)*255.0);
       setPixelColor(j,i,rVal,gVal,bVal);
     }
-  }       
+  }        
 }
 
 // =============================================================================
@@ -1146,10 +1224,8 @@ void applyRasterization()
 // =============================================================================
 int main(int argc, char *argv[])
 {
-  /*char spherePPM[100], planePPM[100], infiniteSpherePPM[100], normalMap[100];
-  cout<<"Enter the PPM file name for objects texture\n";
-  cin>>spherePPM;
-  readPPMFile(spherePPM, 0);*/
+  char texturePPM[100]="texture.ppm";
+  readPPMFile(texturePPM, 0);
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
 
   initEnvironment();
