@@ -11,4 +11,4 @@ PROJECT		= pr08
 FILES		= pr08.cpp
 
 ${PROJECT}:${FILES}
-	${CC} -std=c++11 ${CFLAGS} -o ${PROJECT} ${FILES} ${LDFLAGS} -ggdb -O0
+	${CC} -std=c++11 ${CFLAGS} ${FILES} -o ${PROJECT} ${LDFLAGS} -fopenmp -ggdb -O0
