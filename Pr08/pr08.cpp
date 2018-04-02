@@ -776,13 +776,13 @@ void initMeshFromFile(int option)
         }
 	for (int j = 0; j < curMesh.Indices.size(); j+=3)
 	{
-	  point p1(curMesh.Vertices[curMesh.Indices[j]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j]].Position.Z+k3);
-    point p2(curMesh.Vertices[curMesh.Indices[j+1]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j+1]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j+1]].Position.Z+k3);
-    point p3(curMesh.Vertices[curMesh.Indices[j+2]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j+2]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j+2]].Position.Z+k3);
+	  point p1(50*curMesh.Vertices[curMesh.Indices[j]].Position.X+k1, 50*curMesh.Vertices[curMesh.Indices[j]].Position.Y+k2, 50*curMesh.Vertices[curMesh.Indices[j]].Position.Z+k3);
+    point p2(50*curMesh.Vertices[curMesh.Indices[j+1]].Position.X+k1, 50*curMesh.Vertices[curMesh.Indices[j+1]].Position.Y+k2, 50*curMesh.Vertices[curMesh.Indices[j+1]].Position.Z+k3);
+    point p3(50*curMesh.Vertices[curMesh.Indices[j+2]].Position.X+k1, 50*curMesh.Vertices[curMesh.Indices[j+2]].Position.Y+k2, 50*curMesh.Vertices[curMesh.Indices[j+2]].Position.Z+k3);
     
-    gVector v1(curMesh.Vertices[curMesh.Indices[j]].Normal.X, curMesh.Vertices[curMesh.Indices[j]].Normal.Y, curMesh.Vertices[curMesh.Indices[j]].Normal.Z);
-    gVector v2(curMesh.Vertices[curMesh.Indices[j+1]].Normal.X, curMesh.Vertices[curMesh.Indices[j+1]].Normal.Y, curMesh.Vertices[curMesh.Indices[j+1]].Normal.Z);
-    gVector v3(curMesh.Vertices[curMesh.Indices[j+2]].Normal.X, curMesh.Vertices[curMesh.Indices[j+2]].Normal.Y, curMesh.Vertices[curMesh.Indices[j+2]].Normal.Z);
+    gVector v1(50*curMesh.Vertices[curMesh.Indices[j]].Normal.X, 50*curMesh.Vertices[curMesh.Indices[j]].Normal.Y, 50*curMesh.Vertices[curMesh.Indices[j]].Normal.Z);
+    gVector v2(50*curMesh.Vertices[curMesh.Indices[j+1]].Normal.X, 50*curMesh.Vertices[curMesh.Indices[j+1]].Normal.Y, 50*curMesh.Vertices[curMesh.Indices[j+1]].Normal.Z);
+    gVector v3(50*curMesh.Vertices[curMesh.Indices[j+2]].Normal.X, 50*curMesh.Vertices[curMesh.Indices[j+2]].Normal.Y, 50*curMesh.Vertices[curMesh.Indices[j+2]].Normal.Z);
     if (option == 2)
     {
       float t1[2], t2[2], t3[2];
@@ -948,29 +948,30 @@ bool checkIntersection(double& tMin, gVector* npe, int& shape)
 {
   double t;
   bool changedValue = false;
-  /*
-    for (int k=0; k<numOfMeshes; k++)
+  double fieldLength = npe->length();
+  for (int k=0; k<numOfMeshes; k++)
+  {
+    if (planeIntersection(tObjs[k]->vertices[0], pe, tObjs[k]->triangleNormal, npe, t))
     {
-      if (planeIntersection(tObjs[k]->vertices[0], pe, tObjs[k]->triangleNormal, npe, t))
+      point hitPoint(pe->x+(npe->x*t),pe->y+(npe->y*t),pe->z+(npe->z*t));
+      if (liesInside(hitPoint, *tObjs[k]) && (t<tMin || !changedValue) && fieldLength < t)
       {
-        point hitPoint(pe->x+(npe->x*t),pe->y+(npe->y*t),pe->z+(npe->z*t));
-        if (liesInside(hitPoint, *tObjs[k]) && (t<tMin || !changedValue) && fieldLength < t)
-        {
-          shape = k;
-          tMin = t;
-          changedValue = true;
-        }
-      }
-    }*/
-    if (sphereIntersection(spheres[0], pe, radius[0], npe, t))
-    {
-      if (t<tMin || !changedValue)
-      {
-        shape=numOfMeshes;
-        tMin=t;
-        changedValue=true;
+        shape = k;
+        tMin = t;
+        changedValue = true;
       }
     }
+  }
+  if (sphereIntersection(spheres[0], pe, radius[0], npe, t))
+  {
+    if (t<tMin || !changedValue)
+    {
+      shape=numOfMeshes;
+      tMin=t;
+      changedValue=true;
+    }
+  }
+  return changedValue;
 }
 
 void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& blue, int shape, gVector* normalAdd = NULL)
@@ -1083,48 +1084,30 @@ void getSpecularColor(double& red, double& green, double& blue, point& hitPoint,
   int shape=-1;
   if (checkIntersection(tMin, &reflection, shape))
   {
-    double red, green, blue;
+    double red=1.0, green=1.0, blue=1.0;
     point intersectPoint(hitPoint.x+(reflection.x*tMin),hitPoint.y+(reflection.y*tMin),hitPoint.z+(reflection.z*tMin));
-    /*
     if (shape < numOfMeshes)
     {
       gVector normalAtPoint;
       float texture[2];
       computeParameters(*tObjs[shape], hitPoint, normalAtPoint, texture);
       normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
-
-      if (!tObjs[shape]->colorAdded)
-      {
-        red = 20, green = 90, blue = 70;
-      }
-      else
-      {
-        int xVal = texture[0]*width[0];
-        int yVal = texture[1]*height[0];
-        int num = ((yVal*width[0])+xVal)*3;
-        red = pixmapOrig[0][num++];
-        green = pixmapOrig[0][num++];
-        blue = pixmapOrig[0][num];
-      }
-      
-      color planeColor(red, green, blue, 255);
-      getColor(planeColor, lightColor, lightPos, normalAtPoint, *npe, hitPoint); 
-      ambient=planeColor;
-      double redVal, greenVal, blueVal;
-      ambient.getResult(redVal, greenVal, blueVal);
-      rChannel+=redVal;
-      gChannel+=greenVal;
-      bChannel+=blueVal;
+      int rVal=255, gVal=255, bVal=255;
+      red = red * rVal/255.0;
+      green = green * gVal/255.0;
+      blue = blue * bVal/255.0;
+      getSpecularColor(red, green, blue, intersectPoint, normalAtPoint, reflection, recursionCount+1);
     }
-    else*/
-    gVector nh(intersectPoint.x-spheres[0]->x,intersectPoint.y-spheres[0]->y,intersectPoint.z-spheres[0]->z);
-    nh.scalarMultiply(1.0/nh.length());
-    int rVal, gVal, bVal;
-    environmentColor(intersectPoint, reflection, rVal, gVal, bVal, shape);
-    red = red * rVal/255.0;
-    green = green * gVal/255.0;
-    blue = blue * bVal/255.0;
-    getSpecularColor(red, green, blue, intersectPoint, nh, reflection, recursionCount+1);
+    else
+    {
+      gVector nh(intersectPoint.x-spheres[0]->x,intersectPoint.y-spheres[0]->y,intersectPoint.z-spheres[0]->z);
+      nh.scalarMultiply(1.0/nh.length());
+      int rVal=255, gVal=255, bVal=255;
+      red = red * rVal/255.0;
+      green = green * gVal/255.0;
+      blue = blue * bVal/255.0;
+      getSpecularColor(red, green, blue, intersectPoint, nh, reflection, recursionCount+1);
+    }
   }
   else
   {
@@ -1144,7 +1127,7 @@ void applyRasterization()
   cout<<"Enter:\n1. With environment map\n2. With normal map\n";
   int option;
   cin>>option;
-  //initMeshFromFile(2);
+  initMeshFromFile(1);
   point* testPoint = new point(0,0,0);
   point* lightPos = new point(0,0,0);
   color lightColor(10,10,10,15);
@@ -1152,7 +1135,7 @@ void applyRasterization()
   omp_set_nested(2);
   omp_set_num_threads(omp_get_num_procs()*2);
   int j, i;
- // #pragma omp parallel for collapse(2) private (j,i)
+  #pragma omp parallel for collapse(2) private (j,i)
     for(j=0;j<heightComputed;j++)
     {
       for(i=0;i<widthComputed;i++)
@@ -1184,7 +1167,7 @@ void applyRasterization()
             if (checkIntersection(tMin, npe, shape))
             {
               double red=1, green=1, blue=1;
-              point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));/*
+              point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
               if (shape<numOfMeshes)
               {
                 gVector normalAtPoint;
@@ -1192,23 +1175,13 @@ void applyRasterization()
                 computeParameters(*tObjs[shape], hitPoint, normalAtPoint, texture);
                 normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
 
-                if (!tObjs[shape]->colorAdded)
-                {
-                  red = 20, green = 90, blue = 70;
-                }
-                else
-                {
-                  int xVal = texture[0]*width[0];
-                  int yVal = texture[1]*height[0];
-                  int num = ((yVal*width[0])+xVal)*3;
-                  red = pixmapOrig[0][num++];
-                  green = pixmapOrig[0][num++];
-                  blue = pixmapOrig[0][num];
-                }
-                
-                color planeColor(red, green, blue, 255);
-                getColor(planeColor, lightColor, lightPos, normalAtPoint, *npe, hitPoint); 
-                ambient=planeColor;
+                getSpecularColor(red, green, blue, hitPoint, normalAtPoint, *npe, 0);
+                int rVal = red * 255;
+                int gVal = green * 255;
+                int bVal = blue * 255;
+                ambient.setColor(rVal, gVal, bVal, 255);
+
+                getColor(ambient, lightColor, lightPos, normalAtPoint, *npe, hitPoint); 
                 double redVal, greenVal, blueVal;
                 ambient.getResult(redVal, greenVal, blueVal);
                 rChannel+=redVal;
@@ -1216,19 +1189,21 @@ void applyRasterization()
                 bChannel+=blueVal;
               }
 
-              else*/      
-              gVector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
-              nh.scalarMultiply(1.0/nh.length());
-              getSpecularColor(red, green, blue, hitPoint, nh, *npe, 0);
-              int rVal = red * 255;
-              int gVal = green * 255;
-              int bVal = blue * 255;
-              ambient.setColor(rVal, gVal, bVal, 255);
-              getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
-              ambient.getResult(red, green, blue);
-              rChannel+=red;
-              gChannel+=green;
-              bChannel+=blue;
+              else
+              {
+                gVector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
+                nh.scalarMultiply(1.0/nh.length());
+                getSpecularColor(red, green, blue, hitPoint, nh, *npe, 0);
+                int rVal = red * 255;
+                int gVal = green * 255;
+                int bVal = blue * 255;
+                ambient.setColor(rVal, gVal, bVal, 255);
+                getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
+                ambient.getResult(red, green, blue);
+                rChannel+=red;
+                gChannel+=green;
+                bChannel+=blue;
+              }
             }
             else
             {
