@@ -42,7 +42,7 @@
 #define MAXANGLE 1.0
 #define MINREFLECTION 0.9
 #define MAXREFLECTION 1.0
-#define KD 4
+#define KD 2
 #define KS 4
 #define KB 0
 
@@ -683,13 +683,13 @@ void initEnvironment()
   n1->scalarMultiply(((double)1)/n1->length());
   p0 = new point (pc->x-((SX/2)*(n0->x))-((SY/2)*(n1->x)),pc->y-((SX/2)*(n0->y))-((SY/2)*(n1->y)),pc->z-((SX/2)*(n0->z))-((SY/2)*(n1->z)));
 
-  spheres[0] = new point (325,325,-25);
+  spheres[0] = new point (250,350,-25);
   radius[0]=50;
 }
 
 void initLight()
 {
-  lightPosition = new point(100,150,150);
+  lightPosition = new point(250,250,150);
 }
 
 void initMeshes(int option)
@@ -938,8 +938,8 @@ void getColor(color& surfaceColor, color& lightColor, point* lightPosition, gVec
   diffuse.multiply(KD*d);
   specular.multiplyColor(lightColor);
   specular.multiply(KS*s);
-  border.multiplyColor(lightColor);
-  border.multiply(KB*b);
+  //border.multiplyColor(lightColor);
+  //border.multiply(KB*b);
   surfaceColor.addColor(diffuse);
   surfaceColor.addColor(specular);
 }
@@ -1075,6 +1075,8 @@ void getSpecularColor(double& red, double& green, double& blue, point& hitPoint,
   if (recursionCount > 4)
     return;
   double cosTheta = normal.dotProduct(incident);
+  if (cosTheta<0)
+    cosTheta=0;
   gVector reflection(-incident.x+2*cosTheta*normal.x, -incident.y+2*cosTheta*normal.y, -incident.z+2*cosTheta*normal.z);
   reflection.scalarMultiply(1.0/reflection.length());
   double tMin=99999;
