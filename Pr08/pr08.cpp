@@ -689,7 +689,8 @@ void initEnvironment()
 
 void initLight()
 {
-  lightPosition = new point(250,250,150);
+  lightDirection = new gVector(100, 10, -10);
+  lightDirection->scalarMultiply(1.0/lightDirection->length());
 }
 
 void initMeshes(int option)
@@ -839,25 +840,8 @@ void computeTriangleValues(point& hitpoint, triangle& tObj, float& max, float& v
   max = maxAbs(a->x, a->y, a->z);
   val1 = maxAbs(a1->x, a1->y, a1->z);
   val2 = maxAbs(a2->x, a2->y, a2->z);
-  val3 = maxAbs(a3->x, a3->y, a3->z);/*
-  if (max == a->x)
-  {
-    val1 = a1->x;
-    val2 = a2->x;
-    val3 = a3->x;
-  }
-  else if (max == a->y)
-  {
-    val1 = a1->y;
-    val2 = a2->y;
-    val3 = a3->y;
-  }
-  else
-  {
-    val1 = a1->z;
-    val2 = a2->z;
-    val3 = a3->z;
-  }*/
+  val3 = maxAbs(a3->x, a3->y, a3->z);
+
   delete a1;
   delete a2;
   delete a3;
@@ -894,11 +878,11 @@ void computeParameters(triangle& tObj, point& hitpoint, gVector& normal, float t
   }
 }
 
-void getColor(color& surfaceColor, color& lightColor, point* lightPosition, gVector& nh, gVector& npe, point& hitPoint)
+void getColor(color& surfaceColor, color& lightColor, gVector& nh, gVector& npe, point& hitPoint)
 {
   double d, s, b;
   
-  gVector lightgVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
+  gVector lightgVector(lightDirection->x, lightDirection->y, lightDirection->z);
   double distance = lightgVector.length();
   lightgVector.scalarMultiply(1.0/distance);
     
@@ -982,7 +966,7 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
   double xCord, yCord;
   if (shape != -1)
   {
-    gVector p0h(hitPoint.x - spheres[shape]->x, hitPoint.y - spheres[shape]->y, hitPoint.z - spheres[shape]->z);
+    gVector p0h(hitPoint.x - spheres[0]->x, hitPoint.y - spheres[0]->y, hitPoint.z - spheres[0]->z);
     p0h.scalarMultiply(1.0/(double)p0h.length());
     gVector sphereN2(0,-1,0);
     gVector sphereN1(0,0,1);
@@ -1005,17 +989,18 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
 
     if (normalAdd)
     {
-      int xVal = (int)(xCord*width[3]);
-      int yVal = height[3]-1-(int)(yCord*height[3]);
-      int num = ((yVal*width[3])+xVal)*3;
-      double redVal = (double)pixmapOrig[3][num++]/255.0;
-      double greenVal = (double)pixmapOrig[3][num++]/255.0;
-      double blueVal = (double)pixmapOrig[3][num]/255.0;
+      int xVal = (int)(xCord*width[1]);
+      int yVal = height[1]-1-(int)(yCord*height[1]);
+      int num = ((yVal*width[1])+xVal)*3;
+      double redVal = (double)pixmapOrig[1][num++]/255.0;
+      double greenVal = (double)pixmapOrig[1][num++]/255.0;
+      double blueVal = (double)pixmapOrig[1][num]/255.0;
       normalAdd->x = (2.0*redVal - 1.0)*sphereN0.x+(2.0*greenVal - 1.0)*sphereN1.x+(2.0*blueVal - 1.0)*sphereN2.x;
       normalAdd->y = (2.0*redVal - 1.0)*sphereN0.y+(2.0*greenVal - 1.0)*sphereN1.y+(2.0*blueVal - 1.0)*sphereN2.y;
       normalAdd->z = (2.0*redVal - 1.0)*sphereN0.z+(2.0*greenVal - 1.0)*sphereN1.z+(2.0*blueVal - 1.0)*sphereN2.z;
       normalAdd->scalarMultiply(1.0/normalAdd->length());
     }
+    return;
   }
   else
   {
@@ -1147,7 +1132,7 @@ void applyRasterization()
     {
       for(i=0;i<widthComputed;i++)
       {
-        cout<<i<<" "<<j<<endl;
+        cout<<j<<" "<<i<<endl;
         double rChannel=0, gChannel=0, bChannel=0;
         double randomValX = ((double)rand() / (double)RAND_MAX)/4;
         double randomValY = ((double)rand() / (double)RAND_MAX)/4;
@@ -1168,9 +1153,6 @@ void applyRasterization()
             double t;
             color ambient;
             int shape=-1;
-            lightPos->x=lightPosition->x;
-            lightPos->y=lightPosition->y;
-            lightPos->z=lightPosition->z;
             if (checkIntersection(tMin, npe, shape))
             {
               double red=1, green=1, blue=1;
@@ -1188,7 +1170,7 @@ void applyRasterization()
                 int bVal = blue * 255;
                 ambient.setColor(rVal, gVal, bVal, 255);
 
-                getColor(ambient, lightColor, lightPos, normalAtPoint, *npe, hitPoint); 
+                getColor(ambient, lightColor, normalAtPoint, *npe, hitPoint); 
                 double redVal, greenVal, blueVal;
                 ambient.getResult(redVal, greenVal, blueVal);
                 rChannel+=redVal;
@@ -1200,12 +1182,23 @@ void applyRasterization()
               {
                 gVector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
                 nh.scalarMultiply(1.0/nh.length());
+
+                int v1, v2, v3;
+	              gVector normalAdd(0,0,0);           
+                environmentColor(hitPoint, *npe, v1, v2, v3, 0, &normalAdd);
+                if (option == 2)
+                {
+                  nh.x = nh.x+normalAdd.x;
+                  nh.y = nh.y+normalAdd.y;
+                  nh.z = nh.z+normalAdd.z;
+                }
+                nh.scalarMultiply(1.0/nh.length());
                 getSpecularColor(red, green, blue, hitPoint, nh, *npe, 0);
                 int rVal = red * 255;
                 int gVal = green * 255;
                 int bVal = blue * 255;
                 ambient.setColor(rVal, gVal, bVal, 255);
-                getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
+                getColor(ambient, lightColor, nh, *npe, hitPoint);
                 ambient.getResult(red, green, blue);
                 rChannel+=red;
                 gChannel+=green;
@@ -1261,4 +1254,3 @@ int main(int argc, char *argv[])
   return 0; //This line never gets reached. We use it because "main" is type int.
 }
      
-
