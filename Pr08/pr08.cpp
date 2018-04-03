@@ -776,13 +776,13 @@ void initMeshFromFile(int option)
         }
 	for (int j = 0; j < curMesh.Indices.size(); j+=3)
 	{
-	  point p1(50*curMesh.Vertices[curMesh.Indices[j]].Position.X+k1, 50*curMesh.Vertices[curMesh.Indices[j]].Position.Y+k2, 50*curMesh.Vertices[curMesh.Indices[j]].Position.Z+k3);
-    point p2(50*curMesh.Vertices[curMesh.Indices[j+1]].Position.X+k1, 50*curMesh.Vertices[curMesh.Indices[j+1]].Position.Y+k2, 50*curMesh.Vertices[curMesh.Indices[j+1]].Position.Z+k3);
-    point p3(50*curMesh.Vertices[curMesh.Indices[j+2]].Position.X+k1, 50*curMesh.Vertices[curMesh.Indices[j+2]].Position.Y+k2, 50*curMesh.Vertices[curMesh.Indices[j+2]].Position.Z+k3);
+	  point p1(100*curMesh.Vertices[curMesh.Indices[j]].Position.X+k1, 100*curMesh.Vertices[curMesh.Indices[j]].Position.Y+k2, 100*curMesh.Vertices[curMesh.Indices[j]].Position.Z+k3);
+    point p2(100*curMesh.Vertices[curMesh.Indices[j+1]].Position.X+k1, 100*curMesh.Vertices[curMesh.Indices[j+1]].Position.Y+k2, 100*curMesh.Vertices[curMesh.Indices[j+1]].Position.Z+k3);
+    point p3(100*curMesh.Vertices[curMesh.Indices[j+2]].Position.X+k1, 100*curMesh.Vertices[curMesh.Indices[j+2]].Position.Y+k2, 100*curMesh.Vertices[curMesh.Indices[j+2]].Position.Z+k3);
     
-    gVector v1(50*curMesh.Vertices[curMesh.Indices[j]].Normal.X, 50*curMesh.Vertices[curMesh.Indices[j]].Normal.Y, 50*curMesh.Vertices[curMesh.Indices[j]].Normal.Z);
-    gVector v2(50*curMesh.Vertices[curMesh.Indices[j+1]].Normal.X, 50*curMesh.Vertices[curMesh.Indices[j+1]].Normal.Y, 50*curMesh.Vertices[curMesh.Indices[j+1]].Normal.Z);
-    gVector v3(50*curMesh.Vertices[curMesh.Indices[j+2]].Normal.X, 50*curMesh.Vertices[curMesh.Indices[j+2]].Normal.Y, 50*curMesh.Vertices[curMesh.Indices[j+2]].Normal.Z);
+    gVector v1(100*curMesh.Vertices[curMesh.Indices[j]].Normal.X, 100*curMesh.Vertices[curMesh.Indices[j]].Normal.Y, 100*curMesh.Vertices[curMesh.Indices[j]].Normal.Z);
+    gVector v2(100*curMesh.Vertices[curMesh.Indices[j+1]].Normal.X, 100*curMesh.Vertices[curMesh.Indices[j+1]].Normal.Y, 100*curMesh.Vertices[curMesh.Indices[j+1]].Normal.Z);
+    gVector v3(100*curMesh.Vertices[curMesh.Indices[j+2]].Normal.X, 100*curMesh.Vertices[curMesh.Indices[j+2]].Normal.Y, 100*curMesh.Vertices[curMesh.Indices[j+2]].Normal.Z);
     if (option == 2)
     {
       float t1[2], t2[2], t3[2];
@@ -837,6 +837,9 @@ void computeTriangleValues(point& hitpoint, triangle& tObj, float& max, float& v
   gVector *a = t1 * t2;
 
   max = maxAbs(a->x, a->y, a->z);
+  val1 = maxAbs(a1->x, a1->y, a1->z);
+  val2 = maxAbs(a2->x, a2->y, a2->z);
+  val3 = maxAbs(a3->x, a3->y, a3->z);/*
   if (max == a->x)
   {
     val1 = a1->x;
@@ -854,7 +857,7 @@ void computeTriangleValues(point& hitpoint, triangle& tObj, float& max, float& v
     val1 = a1->z;
     val2 = a2->z;
     val3 = a3->z;
-  }
+  }*/
   delete a1;
   delete a2;
   delete a3;
@@ -1131,7 +1134,11 @@ void applyRasterization()
   point* testPoint = new point(0,0,0);
   point* lightPos = new point(0,0,0);
   color lightColor(10,10,10,15);
-
+  if (option == 2)
+  {
+    char normalMap[100]="normal.ppm";
+    readPPMFile(normalMap, 1);
+  }
   omp_set_nested(2);
   omp_set_num_threads(omp_get_num_procs()*2);
   int j, i;
