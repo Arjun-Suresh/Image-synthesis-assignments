@@ -41,8 +41,8 @@
 #define MAXANGLE 1.0
 #define MINREFLECTION 0.9
 #define MAXREFLECTION 1.0
-#define KD 5
-#define KS 10
+#define KD 2
+#define KS 4
 #define KB 0
 
 
@@ -599,22 +599,9 @@ void initEnvironment()
 
 void initLight(int option)
 {
-  if (option == 4)
-  {
-    lightCorner = new point(150,270,55);
-    lightN0 = new vector(1,0,0);
-    lightN1 = new vector(0,1,0);
-  }
-  else
-  {
-    if(option == 1 || option == 3)
-      lightPosition = new point(250,250,-60);
-    if(option>1)
-    {
-      lightDirection = new vector(115,20,-120);
-      lightDirection->scalarMultiply(1.0/lightDirection->length());
-    }
-  }
+
+  lightDirection = new vector(150,200,-150);
+  lightDirection->scalarMultiply(1.0/lightDirection->length());
 }
 
 double clamp(double val)
@@ -626,11 +613,11 @@ double clamp(double val)
   return val;
 }
 
-void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vector& nh, vector& npe, point& hitPoint)
+void getColor(color& surfaceColor, color& lightColor, vector& nh, vector& npe, point& hitPoint)
 {
   double d, s, b;
   
-  vector lightVector(lightPosition->x-hitPoint.x,lightPosition->y-hitPoint.y,lightPosition->z-hitPoint.z);
+  vector lightVector(-lightDirection->x,-lightDirection->y,-lightDirection->z);
   double distance = lightVector.length();
   lightVector.scalarMultiply(1.0/distance);
     
@@ -655,7 +642,7 @@ void getColor(color& surfaceColor, color& lightColor, point* lightPosition, vect
   if (shadow)
     return;
   double res = lightVector.dotProduct(nh);
-  if (res<0.2)
+  if (res<0.1)
     d=0;
   else
   d=clamp((res-MINANGLE)/(MAXANGLE-MINANGLE));
@@ -689,9 +676,9 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
   {
     vector p0h(hitPoint.x - spheres[shape]->x, hitPoint.y - spheres[shape]->y, hitPoint.z - spheres[shape]->z);
     p0h.scalarMultiply(1.0/(double)p0h.length());
-    vector sphereN2(0,-1,0);
-    vector sphereN1(0,0,1);
-    vector sphereN0(1,0,0);
+    vector sphereN2(-1,0,0);
+    vector sphereN1(0,-1,0);
+    vector sphereN0(0,0,1);
     double z = sphereN2.dotProduct(p0h);
     double y = sphereN1.dotProduct(p0h);
     double x = sphereN0.dotProduct(p0h);
@@ -720,21 +707,25 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
   }
   else if (shape == 2)
   {
-    vector p0h(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y), hitPoint.z - floor(hitPoint.z));
-    p0h.scalarMultiply(1.0/p0h.length());
-    xCord = p0h.dotProduct(*planeN0);
-    yCord = p0h.dotProduct(*planeN1);
-    if (xCord<0)
-      xCord+=1;
-    if (yCord<0)
-      yCord+=1;
-    
+    int yVal = (int)(hitPoint.z);
+    int xVal = (int)(hitPoint.x);
+    if (yVal<0)
+      yVal = yVal*-1;
+    if (xVal<0)
+      xVal = xVal*-1;
+    yVal = yVal%height[1];
+    xVal = xVal%width[1];
+    int num = ((yVal*width[1])+xVal)*3;
+    red = pixmapOrig[1][num++];
+    green = pixmapOrig[1][num++];
+    blue = pixmapOrig[1][num];
+    return;
   }
   else
   {
-    vector sphereN2(0,-1,0);
-    vector sphereN1(0,0,1);
-    vector sphereN0(1,0,0);
+    vector sphereN2(-1,0,0);
+    vector sphereN1(0,-1,0);
+    vector sphereN0(0,0,1);
     double z = sphereN2.dotProduct(npe);
     double y = sphereN1.dotProduct(npe);
     double x = sphereN0.dotProduct(npe);
@@ -754,11 +745,15 @@ void getSurfaceColor(point& hitPoint, int shape, vector& npe, int& red, int& gre
     shape--;
   xCord=xCord*width[shape];
   yCord=yCord*height[shape];
-  int iCord = floor(xCord+0.5)-1;
-  int jCord = floor(yCord+0.5)-1;
-  double u = xCord - ((double)(iCord)+0.5);
-  double v = yCord - ((double)(jCord)+0.5);
-  
+  if (xCord<0)
+    xCord+=width[shape];
+  if (yCord<0)
+    yCord+=height[shape];
+  int iCord = round(xCord+0.5)-1;
+  int jCord = round(yCord+0.5)-1;
+  double u = xCord - (double)(iCord);
+  double v = yCord - (double)(jCord);
+
   if (iCord < 0)
     iCord+=width[shape];
   if (jCord < 0)
@@ -798,7 +793,7 @@ void applyRasterization()
   initLight(1);
   point* testPoint = new point(0,0,0);
   point* lightPos = new point(0,0,0);
-  color lightColor(10,10,10,10);
+  color lightColor(10,10,10,15);
   for(int j=0;j<heightComputed;j++)
   {
     for(int i=0;i<widthComputed;i++)
@@ -811,7 +806,7 @@ void applyRasterization()
         for(int l=0;l<4;l++)
         {
           double x= i + (double)l/4 + randomValX;
-	  double y= j + (double)m/4 + randomValY;
+	        double y= j + (double)m/4 + randomValY;
       	  testPoint->x = p0->x + (n0->x)*SX*(x/widthComputed) + (n1->x)*SY*(y/heightComputed);
           testPoint->y = p0->y + (n0->y)*SX*(x/widthComputed) + (n1->y)*SY*(y/heightComputed);
           testPoint->z = p0->z + (n0->z)*SX*(x/widthComputed) + (n1->z)*SY*(y/heightComputed);
@@ -823,9 +818,6 @@ void applyRasterization()
           double t;
           color ambient;
           int shape=-1;
-          lightPos->x=lightPosition->x;
-          lightPos->y=lightPosition->y;
-          lightPos->z=lightPosition->z;
 
           if (sphereIntersection(spheres[0], pe, radius[0], npe, t))
           {
@@ -860,7 +852,7 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
             nh.scalarMultiply(1.0/nh.length());
-	    vector normalAdd(0,0,0);           
+	          vector normalAdd(0,0,0);           
             getSurfaceColor(hitPoint, 0, *npe, red, green, blue, &normalAdd);
             if (option == 2)
             {
@@ -869,7 +861,7 @@ void applyRasterization()
               nh.z = nh.z+normalAdd.z;
             }            
             ambient.setColor(red, green, blue, 255);
-            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
+            getColor(ambient, lightColor, nh, *npe, hitPoint);
           }
           if (shape == 1)
           {
@@ -877,7 +869,7 @@ void applyRasterization()
             point hitPoint(pe->x+(npe->x*tMin),pe->y+(npe->y*tMin),pe->z+(npe->z*tMin));
             vector nh(hitPoint.x-spheres[1]->x,hitPoint.y-spheres[1]->y,hitPoint.z-spheres[1]->z);
             nh.scalarMultiply(1.0/nh.length());
-	    vector normalAdd(0,0,0);
+	          vector normalAdd(0,0,0);
             getSurfaceColor(hitPoint, 1, *npe, red, green, blue, &normalAdd);
             if (option == 2)
             {
@@ -886,7 +878,7 @@ void applyRasterization()
               nh.z = nh.z+normalAdd.z;
             }            
             ambient.setColor(red, green, blue, 255);
-            getColor(ambient, lightColor, lightPos, nh, *npe, hitPoint);
+            getColor(ambient, lightColor, nh, *npe, hitPoint);
           }
           if (shape == 2)
           {
@@ -895,7 +887,7 @@ void applyRasterization()
 
             getSurfaceColor(hitPoint, 2, *npe, red, green, blue,NULL);
             color planeColor(red,green,blue,255);
-            getColor(planeColor, lightColor, lightPos, *planeN2, *npe, hitPoint); 
+            getColor(planeColor, lightColor, *planeN2, *npe, hitPoint); 
             ambient=planeColor;
           }
           if (shape!=-1)
