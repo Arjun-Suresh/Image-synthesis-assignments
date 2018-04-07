@@ -644,7 +644,12 @@ bool sphereIntersection(point* center, point* pe, double radius, gVector* npe, d
     return false;
   double t1 = b + pow(delta,0.5);
   double t2 = b - pow(delta,0.5);
-  t = (t1<t2)?(t1):(t2);
+  if (t1>=-0.01 && t1<=0.01)
+    t=t2;
+  else if (t2>=-0.01 && t2<=0.01)
+    t=t1;
+  else
+    t = (t1<t2)?(t1):(t2);
   return true;
 }
 
@@ -1066,11 +1071,23 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
   blue = (1.0-u)*(1.0-v)*blue1 + u*(1.0-v)*blue4 + (1.0-u)*v*blue2 + u*v*blue3;
 }
 
-void getTransmittedColor(gVector* npe, double& red, double& green, double& blue, point& hitPoint, gVector& normal, gVector& incident, int recursionCount, int option, double eta)
+void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& green, double& blue, point& hitPoint, gVector& normal, gVector& incident, int recursionCount, int option, double eta)
 {
   if (recursionCount > 4)
     return;
-  gVector negativeIncident (-incident.x, -incident.y, -incident.z);
+  gVector negativeIncident;
+  if (recursionCount%2)
+  {
+    negativeIncident.x = incident.x;
+    negativeIncident.y = incident.y;
+    negativeIncident.z = incident.z;
+  }
+  else
+  {
+    negativeIncident.x = -incident.x;
+    negativeIncident.y = -incident.y;
+    negativeIncident.z = -incident.z;
+  }
   double c = normal.dotProduct(negativeIncident);
   double a = -1.0/eta;
   double term = (c*c-1)/(eta*eta)+1.0;
@@ -1090,9 +1107,9 @@ void getTransmittedColor(gVector* npe, double& red, double& green, double& blue,
   }
   double tMin=99999;
   int shape=-1;
-  if (checkIntersection(tMin, &result, shape, &hitPoint))
+  bool checkVal = checkIntersection(tMin, &result, shape, &hitPoint);
+  if (checkVal && ((shape!=shapeIncoming && recursionCount>0)||recursionCount==0))
   {
-    double red=1.0, green=1.0, blue=1.0;
     point intersectPoint(hitPoint.x+(result.x*tMin),hitPoint.y+(result.y*tMin),hitPoint.z+(result.z*tMin));
     if (shape < numOfMeshes)
     {
@@ -1100,11 +1117,7 @@ void getTransmittedColor(gVector* npe, double& red, double& green, double& blue,
       float texture[2];
       computeParameters(*tObjs[shape], hitPoint, normalAtPoint, texture);
       normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
-      int rVal=255, gVal=255, bVal=255;
-      red = red * rVal/255.0;
-      green = green * gVal/255.0;
-      blue = blue * bVal/255.0;
-      getTransmittedColor(npe, red, green, blue, intersectPoint, normalAtPoint, result, recursionCount+1, option, 1.0/eta);
+      getTransmittedColor(npe, shape, red, green, blue, intersectPoint, normalAtPoint, result, recursionCount+1, option, 1.0/eta);
     }
     else
     {
@@ -1121,18 +1134,14 @@ void getTransmittedColor(gVector* npe, double& red, double& green, double& blue,
         nh.z = nh.z+normalAdd.z;
       }
       nh.scalarMultiply(1.0/nh.length());
-      int rVal=255, gVal=255, bVal=255;
-      red = red * rVal/255.0;
-      green = green * gVal/255.0;
-      blue = blue * bVal/255.0;
-      getTransmittedColor(npe, red, green, blue, intersectPoint, nh, result, recursionCount+1, option, 1.0/eta);
+      getTransmittedColor(npe, shape, red, green, blue, intersectPoint, nh, result, recursionCount+1, option, 1.0/eta);
     }
   }
   else
   {
     int rVal, gVal, bVal;
     point dummyPoint(0,0,0);
-    environmentColor(dummyPoint, result, rVal, gVal, bVal, shape);
+    environmentColor(dummyPoint, result, rVal, gVal, bVal, -1);
     red = red * rVal/255.0;
     green = green * gVal/255.0;
     blue = blue * bVal/255.0;
@@ -1195,7 +1204,7 @@ void applyRasterization()
                 computeParameters(*tObjs[shape], hitPoint, normalAtPoint, texture);
                 normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
 
-                getTransmittedColor(npe, red, green, blue, hitPoint, normalAtPoint, *npe, 0, option, glassIndex);
+                getTransmittedColor(npe, shape, red, green, blue, hitPoint, normalAtPoint, *npe, 0, option, glassIndex);
                 int rVal = red * 255;
                 int gVal = green * 255;
                 int bVal = blue * 255;
@@ -1224,7 +1233,7 @@ void applyRasterization()
                   nh.z = nh.z+normalAdd.z;
                 }
                 nh.scalarMultiply(1.0/nh.length());
-                getTransmittedColor(npe, red, green, blue, hitPoint, nh, *npe, 0, option, glassIndex);
+                getTransmittedColor(npe, shape, red, green, blue, hitPoint, nh, *npe, 0, option, glassIndex);
                 int rVal = red * 255;
                 int gVal = green * 255;
                 int bVal = blue * 255;
