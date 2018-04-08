@@ -772,23 +772,23 @@ void initMeshFromFile(int option)
 	for (int j = 0; j < curMesh.Indices.size(); j+=3)
 	{
 	  if (curMesh.Vertices[curMesh.Indices[j]].Position.X < 100)
-            k1=200;
+            k1=0;
           if (curMesh.Vertices[curMesh.Indices[j]].Position.Y < 100)
-            k2=200;
+            k2=0;
           if (curMesh.Vertices[curMesh.Indices[j]].Position.Z > -50)
-            k3=-200;
+            k3=-0;
           if (k1 && k2 && k3)
             break;
         }
 	for (int j = 0; j < curMesh.Indices.size(); j+=3)
 	{
-	  point p1(100*curMesh.Vertices[curMesh.Indices[j]].Position.X+k1, 100*curMesh.Vertices[curMesh.Indices[j]].Position.Y+k2, 100*curMesh.Vertices[curMesh.Indices[j]].Position.Z+k3);
-    point p2(100*curMesh.Vertices[curMesh.Indices[j+1]].Position.X+k1, 100*curMesh.Vertices[curMesh.Indices[j+1]].Position.Y+k2, 100*curMesh.Vertices[curMesh.Indices[j+1]].Position.Z+k3);
-    point p3(100*curMesh.Vertices[curMesh.Indices[j+2]].Position.X+k1, 100*curMesh.Vertices[curMesh.Indices[j+2]].Position.Y+k2, 100*curMesh.Vertices[curMesh.Indices[j+2]].Position.Z+k3);
+	  point p1(curMesh.Vertices[curMesh.Indices[j]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j]].Position.Z+k3);
+    point p2(curMesh.Vertices[curMesh.Indices[j+1]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j+1]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j+1]].Position.Z+k3);
+    point p3(curMesh.Vertices[curMesh.Indices[j+2]].Position.X+k1, curMesh.Vertices[curMesh.Indices[j+2]].Position.Y+k2, curMesh.Vertices[curMesh.Indices[j+2]].Position.Z+k3);
     
-    gVector v1(100*curMesh.Vertices[curMesh.Indices[j]].Normal.X, 100*curMesh.Vertices[curMesh.Indices[j]].Normal.Y, 100*curMesh.Vertices[curMesh.Indices[j]].Normal.Z);
-    gVector v2(100*curMesh.Vertices[curMesh.Indices[j+1]].Normal.X, 100*curMesh.Vertices[curMesh.Indices[j+1]].Normal.Y, 100*curMesh.Vertices[curMesh.Indices[j+1]].Normal.Z);
-    gVector v3(100*curMesh.Vertices[curMesh.Indices[j+2]].Normal.X, 100*curMesh.Vertices[curMesh.Indices[j+2]].Normal.Y, 100*curMesh.Vertices[curMesh.Indices[j+2]].Normal.Z);
+    gVector v1(curMesh.Vertices[curMesh.Indices[j]].Normal.X, curMesh.Vertices[curMesh.Indices[j]].Normal.Y, curMesh.Vertices[curMesh.Indices[j]].Normal.Z);
+    gVector v2(curMesh.Vertices[curMesh.Indices[j+1]].Normal.X, curMesh.Vertices[curMesh.Indices[j+1]].Normal.Y, curMesh.Vertices[curMesh.Indices[j+1]].Normal.Z);
+    gVector v3(curMesh.Vertices[curMesh.Indices[j+2]].Normal.X, curMesh.Vertices[curMesh.Indices[j+2]].Normal.Y, curMesh.Vertices[curMesh.Indices[j+2]].Normal.Z);
     if (option == 2)
     {
       float t1[2], t2[2], t3[2];
@@ -939,8 +939,8 @@ void getColor(color& surfaceColor, color& lightColor, gVector& nh, gVector& npe,
   specular.multiply(KS*s);
   //border.multiplyColor(lightColor);
   //border.multiply(KB*b);
-  surfaceColor.addColor(diffuse);
-  surfaceColor.addColor(specular);
+  //surfaceColor.addColor(diffuse);
+  //surfaceColor.addColor(specular);
 }
 
 bool checkIntersection(double& tMin, gVector* npe, int& shape, point* start)
@@ -1003,14 +1003,36 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
     {
       int xVal = (int)(xCord*width[1]);
       int yVal = height[1]-1-(int)(yCord*height[1]);
+
       int num = ((yVal*width[1])+xVal)*3;
+      int numRight = ((yVal*width[1])+((xVal+1)%width[1]))*3;
+      int numUp = ((((yVal+1)%height[1])*width[1])+((xVal)%width[1]))*3;
       double redVal = (double)pixmapOrig[1][num++]/255.0;
       double greenVal = (double)pixmapOrig[1][num++]/255.0;
       double blueVal = (double)pixmapOrig[1][num]/255.0;
-      normalAdd->x = (2.0*redVal - 1.0)*sphereN0.x+(2.0*greenVal - 1.0)*sphereN1.x+(2.0*blueVal - 1.0)*sphereN2.x;
-      normalAdd->y = (2.0*redVal - 1.0)*sphereN0.y+(2.0*greenVal - 1.0)*sphereN1.y+(2.0*blueVal - 1.0)*sphereN2.y;
-      normalAdd->z = (2.0*redVal - 1.0)*sphereN0.z+(2.0*greenVal - 1.0)*sphereN1.z+(2.0*blueVal - 1.0)*sphereN2.z;
-      normalAdd->scalarMultiply(1.0/normalAdd->length());
+
+      double redValRight = (double)pixmapOrig[1][numRight++]/255.0;
+      double greenValRight = (double)pixmapOrig[1][numRight++]/255.0;
+      double blueValRight = (double)pixmapOrig[1][numRight]/255.0;
+
+      double redValUp = (double)pixmapOrig[1][numUp++]/255.0;
+      double greenValUp = (double)pixmapOrig[1][numUp++]/255.0;
+      double blueValUp = (double)pixmapOrig[1][numUp]/255.0;
+
+      gVector axis0(redValRight-redVal, greenValRight-greenVal, blueValRight-blueVal);
+      gVector axis1(redValUp-redVal, greenValUp-greenVal, blueValUp-blueVal);
+      gVector axis2 = *(axis0 * axis1);
+      if (axis0.x || axis0.y || axis0.z)
+        axis0.scalarMultiply(1.0/axis0.length());      
+      if (axis1.x || axis1.y || axis1.z)
+        axis1.scalarMultiply(1.0/axis1.length());
+      if (axis2.x || axis2.y || axis2.z)
+        axis2.scalarMultiply(1.0/axis2.length());
+      normalAdd->x = (2.0*redVal - 1.0)*axis0.x+(2.0*greenVal - 1.0)*axis1.x+(2.0*blueVal - 1.0)*axis2.x;
+      normalAdd->y = (2.0*redVal - 1.0)*axis0.y+(2.0*greenVal - 1.0)*axis1.y+(2.0*blueVal - 1.0)*axis2.y;
+      normalAdd->z = (2.0*redVal - 1.0)*axis0.z+(2.0*greenVal - 1.0)*axis1.z+(2.0*blueVal - 1.0)*axis2.z;
+      if (normalAdd->x || normalAdd->y || normalAdd->z)
+        normalAdd->scalarMultiply(1.0/normalAdd->length());
     }
     return;
   }
@@ -1127,7 +1149,7 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
       if (option == 2)
       {
         int v1, v2, v3;
-        gVector normalAdd(0,0,0);           
+        gVector normalAdd(0,0,0);
         environmentColor(hitPoint, *npe, v1, v2, v3, 0, &normalAdd);
         nh.x = nh.x+normalAdd.x;
         nh.y = nh.y+normalAdd.y;
