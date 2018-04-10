@@ -42,8 +42,8 @@
 #define MAXANGLE 1.0
 #define MINREFLECTION 0.9
 #define MAXREFLECTION 1.0
-#define KD 2
-#define KS 4
+#define KD 4
+#define KS 5
 #define KB 0
 
 
@@ -53,7 +53,7 @@ using namespace std;
 // =============================================================================
 int width[4], height[4], maxColorValue=255, magicNo, widthComputed=750, heightComputed=750;
 unsigned char *pixmapOrig[4], *pixmapComputed;
-float glassIndex = 1.5;
+float glassIndex = 1.25;
 class point
 {
   public:
@@ -694,7 +694,7 @@ void initEnvironment()
 
 void initLight()
 {
-  lightDirection = new gVector(-100, 0, -250);
+  lightDirection = new gVector(250, -250, -250);
   lightDirection->scalarMultiply(1.0/lightDirection->length());
 }
 
@@ -808,7 +808,8 @@ void initMeshFromFile(int option)
   }
 }
 
-float abs(float val)
+template <typename T>
+T abs(T val)
 {
   if (val < 0)
     return val * (-1.0);
@@ -843,9 +844,27 @@ void computeTriangleValues(point& hitpoint, triangle& tObj, float& max, float& v
   gVector *a = t1 * t2;
 
   max = maxAbs(a->x, a->y, a->z);
-  val1 = maxAbs(a1->x, a1->y, a1->z);
+  /*val1 = maxAbs(a1->x, a1->y, a1->z);
   val2 = maxAbs(a2->x, a2->y, a2->z);
-  val3 = maxAbs(a3->x, a3->y, a3->z);
+  val3 = maxAbs(a3->x, a3->y, a3->z);*/
+  if (max == a->x)
+  {
+    val1 = a1->x;
+    val2 = a2->x;
+    val3 = a3->x;
+  }
+  else if (max == a->y)
+  {
+    val1 = a1->y;
+    val2 = a2->y;
+    val3 = a3->y;
+  }
+  else
+  {
+    val1 = a1->z;
+    val2 = a2->z;
+    val3 = a3->z;
+  }
 
   delete a1;
   delete a2;
@@ -939,8 +958,8 @@ void getColor(color& surfaceColor, color& lightColor, gVector& nh, gVector& npe,
   specular.multiply(KS*s);
   //border.multiplyColor(lightColor);
   //border.multiply(KB*b);
-  //surfaceColor.addColor(diffuse);
-  //surfaceColor.addColor(specular);
+  surfaceColor.addColor(diffuse);
+  surfaceColor.addColor(specular);
 }
 
 bool checkIntersection(double& tMin, gVector* npe, int& shape, point* start)
@@ -981,7 +1000,7 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
     gVector p0h(hitPoint.x - spheres[0]->x, hitPoint.y - spheres[0]->y, hitPoint.z - spheres[0]->z);
     p0h.scalarMultiply(1.0/(double)p0h.length());
     gVector sphereN2(-1,0,0);
-    gVector sphereN1(0,-1,0);
+    gVector sphereN1(0,1,0);
     gVector sphereN0(0,0,1);
     double z = sphereN2.dotProduct(p0h);
     double y = sphereN1.dotProduct(p0h);
@@ -1005,12 +1024,12 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
       int yVal = height[1]-1-(int)(yCord*height[1]);
 
       int num = ((yVal*width[1])+xVal)*3;
-      int numRight = ((yVal*width[1])+((xVal+1)%width[1]))*3;
-      int numUp = ((((yVal+1)%height[1])*width[1])+((xVal)%width[1]))*3;
+      /*int numRight = ((yVal*width[1])+((xVal+1)%width[1]))*3;
+      int numUp = ((((yVal+1)%height[1])*width[1])+((xVal)%width[1]))*3;*/
       double redVal = (double)pixmapOrig[1][num++]/255.0;
       double greenVal = (double)pixmapOrig[1][num++]/255.0;
       double blueVal = (double)pixmapOrig[1][num]/255.0;
-
+      /*
       double redValRight = (double)pixmapOrig[1][numRight++]/255.0;
       double greenValRight = (double)pixmapOrig[1][numRight++]/255.0;
       double blueValRight = (double)pixmapOrig[1][numRight]/255.0;
@@ -1032,6 +1051,11 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
       normalAdd->y = (2.0*redVal - 1.0)*axis0.y+(2.0*greenVal - 1.0)*axis1.y+(2.0*blueVal - 1.0)*axis2.y;
       normalAdd->z = (2.0*redVal - 1.0)*axis0.z+(2.0*greenVal - 1.0)*axis1.z+(2.0*blueVal - 1.0)*axis2.z;
       if (normalAdd->x || normalAdd->y || normalAdd->z)
+        normalAdd->scalarMultiply(1.0/normalAdd->length());*/
+      normalAdd->x = (2.0*redVal - 1.0)*sphereN0.x+(2.0*greenVal - 1.0)*sphereN1.x+(2.0*blueVal - 1.0)*sphereN2.x;
+      normalAdd->y = (2.0*redVal - 1.0)*sphereN0.y+(2.0*greenVal - 1.0)*sphereN1.y+(2.0*blueVal - 1.0)*sphereN2.y;
+      normalAdd->z = (2.0*redVal - 1.0)*sphereN0.z+(2.0*greenVal - 1.0)*sphereN1.z+(2.0*blueVal - 1.0)*sphereN2.z;
+      if (normalAdd->x || normalAdd->y || normalAdd->z)
         normalAdd->scalarMultiply(1.0/normalAdd->length());
     }
     return;
@@ -1039,7 +1063,7 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
   else
   {
     gVector sphereN2(-1,0,0);
-    gVector sphereN1(0,-1,0);
+    gVector sphereN1(0,1,0);
     gVector sphereN0(0,0,1);
     double z = sphereN2.dotProduct(npe);
     double y = sphereN1.dotProduct(npe);
@@ -1098,19 +1122,12 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
   if (recursionCount > 4)
     return;
   gVector negativeIncident;
-  if (recursionCount%2)
-  {
-    negativeIncident.x = incident.x;
-    negativeIncident.y = incident.y;
-    negativeIncident.z = incident.z;
-  }
-  else
-  {
-    negativeIncident.x = -incident.x;
-    negativeIncident.y = -incident.y;
-    negativeIncident.z = -incident.z;
-  }
-  double c = normal.dotProduct(negativeIncident);
+
+  negativeIncident.x = -incident.x;
+  negativeIncident.y = -incident.y;
+  negativeIncident.z = -incident.z;
+
+  double c = abs(normal.dotProduct(negativeIncident));
   double a = -1.0/eta;
   double term = (c*c-1)/(eta*eta)+1.0;
   gVector result;
