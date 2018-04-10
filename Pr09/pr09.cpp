@@ -1201,7 +1201,6 @@ void applyRasterization()
     {
       for(i=0;i<widthComputed;i++)
       {
-        cout<<j<<" "<<i<<endl;
         double rChannel=0, gChannel=0, bChannel=0;
         double randomValX = ((double)rand() / (double)RAND_MAX)/4;
         double randomValY = ((double)rand() / (double)RAND_MAX)/4;
