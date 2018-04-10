@@ -42,8 +42,8 @@
 #define MAXANGLE 1.0
 #define MINREFLECTION 0.9
 #define MAXREFLECTION 1.0
-#define KD 4
-#define KS 5
+#define KD 3
+#define KS 4
 #define KB 0
 
 
@@ -52,8 +52,8 @@ using namespace std;
 // These variables will store the input ppm image's width, height, and color
 // =============================================================================
 int width[4], height[4], maxColorValue=255, magicNo, widthComputed=750, heightComputed=750;
-unsigned char *pixmapOrig[4], *pixmapComputed;
-float glassIndex = 1.25;
+unsigned char *pixmapOrig[10], *pixmapComputed;
+float glassIndex = 1.2;
 class point
 {
   public:
@@ -992,7 +992,7 @@ bool checkIntersection(double& tMin, gVector* npe, int& shape, point* start)
   return changedValue;
 }
 
-void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& blue, int shape, gVector* normalAdd = NULL)
+void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& blue, int shape, gVector* normalAdd = NULL, double* etaValue=NULL)
 {
   double xCord, yCord;
   if (shape != -1)
@@ -1024,39 +1024,23 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
       int yVal = height[1]-1-(int)(yCord*height[1]);
 
       int num = ((yVal*width[1])+xVal)*3;
-      /*int numRight = ((yVal*width[1])+((xVal+1)%width[1]))*3;
-      int numUp = ((((yVal+1)%height[1])*width[1])+((xVal)%width[1]))*3;*/
       double redVal = (double)pixmapOrig[1][num++]/255.0;
       double greenVal = (double)pixmapOrig[1][num++]/255.0;
       double blueVal = (double)pixmapOrig[1][num]/255.0;
-      /*
-      double redValRight = (double)pixmapOrig[1][numRight++]/255.0;
-      double greenValRight = (double)pixmapOrig[1][numRight++]/255.0;
-      double blueValRight = (double)pixmapOrig[1][numRight]/255.0;
-
-      double redValUp = (double)pixmapOrig[1][numUp++]/255.0;
-      double greenValUp = (double)pixmapOrig[1][numUp++]/255.0;
-      double blueValUp = (double)pixmapOrig[1][numUp]/255.0;
-
-      gVector axis0(redValRight-redVal, greenValRight-greenVal, blueValRight-blueVal);
-      gVector axis1(redValUp-redVal, greenValUp-greenVal, blueValUp-blueVal);
-      gVector axis2 = *(axis0 * axis1);
-      if (axis0.x || axis0.y || axis0.z)
-        axis0.scalarMultiply(1.0/axis0.length());      
-      if (axis1.x || axis1.y || axis1.z)
-        axis1.scalarMultiply(1.0/axis1.length());
-      if (axis2.x || axis2.y || axis2.z)
-        axis2.scalarMultiply(1.0/axis2.length());
-      normalAdd->x = (2.0*redVal - 1.0)*axis0.x+(2.0*greenVal - 1.0)*axis1.x+(2.0*blueVal - 1.0)*axis2.x;
-      normalAdd->y = (2.0*redVal - 1.0)*axis0.y+(2.0*greenVal - 1.0)*axis1.y+(2.0*blueVal - 1.0)*axis2.y;
-      normalAdd->z = (2.0*redVal - 1.0)*axis0.z+(2.0*greenVal - 1.0)*axis1.z+(2.0*blueVal - 1.0)*axis2.z;
-      if (normalAdd->x || normalAdd->y || normalAdd->z)
-        normalAdd->scalarMultiply(1.0/normalAdd->length());*/
+      
       normalAdd->x = (2.0*redVal - 1.0)*sphereN0.x+(2.0*greenVal - 1.0)*sphereN1.x+(2.0*blueVal - 1.0)*sphereN2.x;
       normalAdd->y = (2.0*redVal - 1.0)*sphereN0.y+(2.0*greenVal - 1.0)*sphereN1.y+(2.0*blueVal - 1.0)*sphereN2.y;
       normalAdd->z = (2.0*redVal - 1.0)*sphereN0.z+(2.0*greenVal - 1.0)*sphereN1.z+(2.0*blueVal - 1.0)*sphereN2.z;
       if (normalAdd->x || normalAdd->y || normalAdd->z)
         normalAdd->scalarMultiply(1.0/normalAdd->length());
+    }
+    if (etaValue)
+    {
+      int xVal = (int)(xCord*width[2]);
+      int yVal = height[2]-1-(int)(yCord*height[2]);
+
+      int num = ((yVal*width[2])+xVal)*3;
+      *etaValue = ((double)pixmapOrig[2][num++]/255.0)+0.5;
     }
     return;
   }
@@ -1144,6 +1128,7 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
     result.y = -negativeIncident.y + 2*c*normal.y;
     result.z = -negativeIncident.z + 2*c*normal.z;
   }
+  result.scalarMultiply(1.0/result.length());
   double tMin=99999;
   int shape=-1;
   bool checkVal = checkIntersection(tMin, &result, shape, &hitPoint);
@@ -1191,7 +1176,7 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
 void applyRasterization()
 {
   initLight();
-  cout<<"Enter:\n1. With environment map\n2. With normal map\n";
+  cout<<"Enter:\n1. With environment map\n2. With normal map\n3. Read index of refraction from texture file\n";
   int option;
   cin>>option;
   initMeshFromFile(1);
@@ -1202,6 +1187,11 @@ void applyRasterization()
   {
     char normalMap[100]="normal.ppm";
     readPPMFile(normalMap, 1);
+  }
+  if (option ==3)
+  {
+    char textureFile[100]="texture.ppm";
+    readPPMFile(textureFile, 2);
   }
   omp_set_nested(2);
   omp_set_num_threads(omp_get_num_procs()*2);
@@ -1249,7 +1239,7 @@ void applyRasterization()
                 int bVal = blue * 255;
                 ambient.setColor(rVal, gVal, bVal, 255);
 
-                getColor(ambient, lightColor, normalAtPoint, *npe, hitPoint); 
+                //getColor(ambient, lightColor, normalAtPoint, *npe, hitPoint); 
                 double redVal, greenVal, blueVal;
                 ambient.getResult(redVal, greenVal, blueVal);
                 rChannel+=redVal;
@@ -1261,7 +1251,7 @@ void applyRasterization()
               {
                 gVector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
                 nh.scalarMultiply(1.0/nh.length());
-
+                double etaValue;
                 if (option == 2)
                 {
                   int v1, v2, v3;
@@ -1271,13 +1261,20 @@ void applyRasterization()
                   nh.y = nh.y+normalAdd.y;
                   nh.z = nh.z+normalAdd.z;
                 }
+                if (option == 3)
+                {
+                  int v1, v2, v3;
+                  environmentColor(hitPoint, *npe, v1, v2, v3, 0, NULL, &etaValue);
+                }
+                else
+                  etaValue = glassIndex;
                 nh.scalarMultiply(1.0/nh.length());
-                getTransmittedColor(npe, shape, red, green, blue, hitPoint, nh, *npe, 0, option, glassIndex);
+                getTransmittedColor(npe, shape, red, green, blue, hitPoint, nh, *npe, 0, option, etaValue);
                 int rVal = red * 255;
                 int gVal = green * 255;
                 int bVal = blue * 255;
                 ambient.setColor(rVal, gVal, bVal, 255);
-                getColor(ambient, lightColor, nh, *npe, hitPoint);
+                //getColor(ambient, lightColor, nh, *npe, hitPoint);
                 ambient.getResult(red, green, blue);
                 rChannel+=red;
                 gChannel+=green;
@@ -1310,7 +1307,7 @@ void applyRasterization()
 // =============================================================================
 int main(int argc, char *argv[])
 {
-  char texturePPM[100]="texture.ppm";
+  char texturePPM[100]="environment.ppm";
   readPPMFile(texturePPM, 0);
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
 
