@@ -1123,9 +1123,12 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
     result.z = -negativeIncident.z + 2*c*normal.z;
   }
   result.scalarMultiply(1.0/result.length());
-  double rotationAngle = ((double)rand() / (double)RAND_MAX)*0.5; //changing to a rotation random angle between 0 and 30 degrees
-  rotateVector(result, rotationAngle);
-  result.scalarMultiply(1.0/result.length());
+  if (option == 1)
+  {
+    double rotationAngle = ((double)rand() / (double)RAND_MAX)*0.5; //changing to a rotation random angle between 0 and 30 degrees
+    rotateVector(result, rotationAngle);
+    result.scalarMultiply(1.0/result.length());
+  }
   double tMin=99999;
   int shape=-1;
   bool checkVal = checkIntersection(tMin, &result, shape, &hitPoint);
@@ -1169,9 +1172,12 @@ void getSpecularColor(gVector* npe, double& red, double& green, double& blue, po
     cosTheta=0;
   gVector reflection(-incident.x+2*cosTheta*normal.x, -incident.y+2*cosTheta*normal.y, -incident.z+2*cosTheta*normal.z);
   reflection.scalarMultiply(1.0/reflection.length());
-  double rotationAngle = ((double)rand() / (double)RAND_MAX)*0.5; //changing to a rotation random angle between 0 and 30 degrees
-  rotateVector(reflection, rotationAngle);
-  reflection.scalarMultiply(1.0/reflection.length());
+  if (option ==1)
+  {
+    double rotationAngle = ((double)rand() / (double)RAND_MAX)*0.05; //changing to a rotation random angle between 0 and 30 degrees
+    rotateVector(reflection, rotationAngle);
+    reflection.scalarMultiply(1.0/reflection.length());
+  }
   double tMin=99999;
   int shape=-1;
   if (checkIntersection(tMin, &reflection, shape, &hitPoint) && recursionCount < 4)
@@ -1219,7 +1225,7 @@ void applyRasterization()
   omp_set_nested(2);
   omp_set_num_threads(omp_get_num_procs()*2);
   int j, i;
-  #pragma omp parallel for collapse(2) private (j,i)
+  //#pragma omp parallel for collapse(2) private (j,i)
     for(j=0;j<heightComputed;j++)
     {
       for(i=0;i<widthComputed;i++)
@@ -1234,6 +1240,15 @@ void applyRasterization()
           {
             double x= i + (double)l/4 + randomValX;
             double y= j + (double)m/4 + randomValY;
+            point oldCenter(spheres[0]->x, spheres[0]->y, spheres[0]->z);
+            if (option == 3)
+            {
+              double t = ((double)((m+1)%4) + randomValY + ((double)((l+1)%4) + randomValX)*4.0)/16.0;
+              point newCenter(spheres[0]->x+20.0,spheres[0]->y+20.0,spheres[0]->z-20.0);
+              spheres[0]->x = spheres[0]->x * (1.0-t) + t * newCenter.x;
+              spheres[0]->y = spheres[0]->y * (1.0-t) + t * newCenter.y;
+              spheres[0]->z = spheres[0]->z * (1.0-t) + t * newCenter.z;
+            }
             testPoint->x = p0->x + (n0->x)*SX*(x/widthComputed) + (n1->x)*SY*(y/heightComputed);
             testPoint->y = p0->y + (n0->y)*SX*(x/widthComputed) + (n1->y)*SY*(y/heightComputed);
             testPoint->z = p0->z + (n0->z)*SX*(x/widthComputed) + (n1->z)*SY*(y/heightComputed);
@@ -1256,7 +1271,7 @@ void applyRasterization()
                 computeParameters(*tObjs[shape], hitPoint, normalAtPoint, texture);
                 normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
 
-                getSpecularColor(npe, red, green, blue, hitPoint, normalAtPoint, *npe, 0, 0);
+                getSpecularColor(npe, red, green, blue, hitPoint, normalAtPoint, *npe, 0, option);
                 int rVal = red * 255;
                 int gVal = green * 255;
                 int bVal = blue * 255;
@@ -1275,22 +1290,7 @@ void applyRasterization()
                 gVector nh(hitPoint.x-spheres[0]->x,hitPoint.y-spheres[0]->y,hitPoint.z-spheres[0]->z);
                 nh.scalarMultiply(1.0/nh.length());
                 double etaValue;
-                if (option == 2)
-                {
-                  int v1, v2, v3;
-                  gVector normalAdd(0,0,0);           
-                  environmentColor(hitPoint, *npe, v1, v2, v3, 0, &normalAdd);
-                  nh.x = nh.x+normalAdd.x;
-                  nh.y = nh.y+normalAdd.y;
-                  nh.z = nh.z+normalAdd.z;
-                }
-                if (option == 3)
-                {
-                  int v1, v2, v3;
-                  environmentColor(hitPoint, *npe, v1, v2, v3, 0, NULL, &etaValue);
-                }
-                else
-                  etaValue = glassIndex;
+                etaValue = glassIndex;
                 nh.scalarMultiply(1.0/nh.length());
                 getTransmittedColor(npe, shape, red, green, blue, hitPoint, nh, *npe, 0, option, etaValue);
                 int rVal = red * 255;
@@ -1314,6 +1314,9 @@ void applyRasterization()
               bChannel+=blue/255.0;
             }          
             delete npe;
+            spheres[0]->x = oldCenter.x;
+            spheres[0]->y = oldCenter.y;
+            spheres[0]->z = oldCenter.z;
           }
         }
         int rVal, gVal, bVal;
