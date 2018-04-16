@@ -33,6 +33,8 @@
 #define minimum(x, y, z) ((x) < (y)? ((x) < (z)? (x) : (z)) : ((y) < (z)? (y) : (z)))
 #define SX 100
 #define SY 100
+#define EYESIZEX 5
+#define EYESIZEY 5
 
 #define SLX 100
 #define SLY 100
@@ -689,13 +691,13 @@ void initEnvironment()
   n1->scalarMultiply(((double)1)/n1->length());
   p0 = new point (pc->x-((SX/2)*(n0->x))-((SY/2)*(n1->x)),pc->y-((SX/2)*(n0->y))-((SY/2)*(n1->y)),pc->z-((SX/2)*(n0->z))-((SY/2)*(n1->z)));
 
-  spheres[0] = new point (250,350,-25);
-  radius[0]=50;
+  spheres[0] = new point (250,250,70);
+  radius[0]=25;
 }
 
 void initLight()
 {
-  lightDirection = new gVector(250, -250, -250);
+  lightDirection = new gVector(50, -20, -250);
   lightDirection->scalarMultiply(1.0/lightDirection->length());
 }
 
@@ -1230,7 +1232,6 @@ void applyRasterization()
     {
       for(i=0;i<widthComputed;i++)
       {
-        cout<<j<<" "<<i<<endl;
         double rChannel=0, gChannel=0, bChannel=0;
         double randomValX = ((double)rand() / (double)RAND_MAX)/4;
         double randomValY = ((double)rand() / (double)RAND_MAX)/4;
@@ -1249,6 +1250,13 @@ void applyRasterization()
               spheres[0]->y = spheres[0]->y * (1.0-t) + t * newCenter.y;
               spheres[0]->z = spheres[0]->z * (1.0-t) + t * newCenter.z;
             }
+            if (option == 2)
+            {
+              pe->x = 225.0 + ((double)l/4 + randomValX)*EYESIZEX;
+              pe->y = 225.0 + ((double)m/4 + randomValY)*EYESIZEY;
+              pe->z = 150.0;
+            }
+
             testPoint->x = p0->x + (n0->x)*SX*(x/widthComputed) + (n1->x)*SY*(y/heightComputed);
             testPoint->y = p0->y + (n0->y)*SX*(x/widthComputed) + (n1->y)*SY*(y/heightComputed);
             testPoint->z = p0->z + (n0->z)*SX*(x/widthComputed) + (n1->z)*SY*(y/heightComputed);
@@ -1270,14 +1278,18 @@ void applyRasterization()
                 float texture[2];
                 computeParameters(*tObjs[shape], hitPoint, normalAtPoint, texture);
                 normalAtPoint.scalarMultiply(1.0/normalAtPoint.length());
-
-                getSpecularColor(npe, red, green, blue, hitPoint, normalAtPoint, *npe, 0, option);
+                if (option != 2)
+                  getSpecularColor(npe, red, green, blue, hitPoint, normalAtPoint, *npe, 0, option);
                 int rVal = red * 255;
                 int gVal = green * 255;
                 int bVal = blue * 255;
+                if (option == 2)
+                {
+                  rVal = 50, gVal = 100, bVal = 40;
+                }
                 ambient.setColor(rVal, gVal, bVal, 255);
 
-                //getColor(ambient, lightColor, normalAtPoint, *npe, hitPoint); 
+                getColor(ambient, lightColor, normalAtPoint, *npe, hitPoint); 
                 double redVal, greenVal, blueVal;
                 ambient.getResult(redVal, greenVal, blueVal);
                 rChannel+=redVal;
@@ -1292,12 +1304,17 @@ void applyRasterization()
                 double etaValue;
                 etaValue = glassIndex;
                 nh.scalarMultiply(1.0/nh.length());
-                getTransmittedColor(npe, shape, red, green, blue, hitPoint, nh, *npe, 0, option, etaValue);
+                if (option !=2)
+                  getTransmittedColor(npe, shape, red, green, blue, hitPoint, nh, *npe, 0, option, etaValue);
                 int rVal = red * 255;
                 int gVal = green * 255;
                 int bVal = blue * 255;
+                if (option == 2)
+                {
+                  rVal = 150, gVal = 100, bVal = 40;
+                }
                 ambient.setColor(rVal, gVal, bVal, 255);
-                //getColor(ambient, lightColor, nh, *npe, hitPoint);
+                getColor(ambient, lightColor, nh, *npe, hitPoint);
                 ambient.getResult(red, green, blue);
                 rChannel+=red;
                 gChannel+=green;
