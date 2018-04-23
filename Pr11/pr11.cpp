@@ -614,11 +614,12 @@ unsigned char* writePixelBufferToFileBuffer(unsigned char* fileBuffer, long int&
   return fileBuffer;
 }
 
-void generatePPMFile()
+void generatePPMFile(double aIndex)
 {
   std::fstream ppmFile;
   char fileName[50];
-  strcpy(fileName,"outputRasterConversion.ppm");
+  string indexString = to_string((int)(aIndex*10.0));
+  strcpy(fileName,string("outputRasterConversion_"+indexString+".ppm").c_str());
   ppmFile.open(fileName,std::fstream::out);
   long int index=0;
   unsigned char* fileBuffer = new unsigned char[10000];
@@ -1051,7 +1052,7 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
   }
 }
 
-void applyRasterization()
+void applyRasterization(double aCoeff)
 {
   initLight();
   color lightColor(10,10,10,10);
@@ -1063,7 +1064,6 @@ void applyRasterization()
     {
       for(i=0;i<widthComputed;i++)
       {
-        cout<<j<<" "<<i<<endl;
         double rChannel=0, gChannel=0, bChannel=0;
         double randomValX = ((double)rand() / (double)RAND_MAX)/4;
         double randomValY = ((double)rand() / (double)RAND_MAX)/4;
@@ -1078,6 +1078,16 @@ void applyRasterization()
             testPoint->x = p0->x + (n0->x)*SX*(x/widthComputed) + (n1->x)*SY*(y/heightComputed);
             testPoint->y = p0->y + (n0->y)*SX*(x/widthComputed) + (n1->y)*SY*(y/heightComputed);
             testPoint->z = p0->z + (n0->z)*SX*(x/widthComputed) + (n1->z)*SY*(y/heightComputed);
+            
+            int num = (((j%height[1])*width[1])+i%width[1])*3;
+            double val1 = 2.0*(pixmapOrig[1][num++]/255.0)-1.0;
+            double val2 = 2.0*(pixmapOrig[1][num++]/255.0)-1.0;
+            double val3 = 2.0*(pixmapOrig[1][num]/255.0)-1.0;
+            testPoint->x += aCoeff * val1;
+            testPoint->y += aCoeff * val2;
+            testPoint->z += aCoeff * val3;
+
+
             gVector* npe = new gVector(testPoint->x-pe->x,testPoint->y-pe->y,testPoint->z-pe->z);
             double fieldLength = npe->length();
             npe->scalarMultiply(((double)1)/fieldLength);
@@ -1137,11 +1147,16 @@ int main(int argc, char *argv[])
 {
   char texturePPM[100]="environment.ppm";
   readPPMFile(texturePPM, 0);
+  char textureFile[100]="texture.ppm";
+  readPPMFile(textureFile,1);
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
 
   initEnvironment();
-  applyRasterization();
-  generatePPMFile();
+  for(double a =0; a<7.2; a++)
+  {
+    applyRasterization(a);
+    generatePPMFile(a+0.1);
+  }
 
 
   glutInit(&argc, argv);
