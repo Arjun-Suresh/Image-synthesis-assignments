@@ -698,7 +698,7 @@ void initEnvironment()
 
 void initLight()
 {
-  lightPosition = new point(250,100,200);
+  lightPosition = new point(350,100,200);
 }
 
 double clamp(double val)
@@ -1054,7 +1054,7 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
   }
 }
 
-void applyRasterization(double aCoeff)
+void applyRasterization(int option, double aCoeff=0)
 {
   initLight();
   color lightColor(10,10,10,10);
@@ -1081,13 +1081,16 @@ void applyRasterization(double aCoeff)
             testPoint->y = p0->y + (n0->y)*SX*(x/widthComputed) + (n1->y)*SY*(y/heightComputed);
             testPoint->z = p0->z + (n0->z)*SX*(x/widthComputed) + (n1->z)*SY*(y/heightComputed);
             
-            int num = (((j%height[1])*width[1])+i%width[1])*3;
-            double val1 = 2.0*(pixmapOrig[1][num++]/255.0)-1.0;
-            double val2 = 2.0*(pixmapOrig[1][num++]/255.0)-1.0;
-            double val3 = 2.0*(pixmapOrig[1][num]/255.0)-1.0;
-            testPoint->x += aCoeff * val1;
-            testPoint->y += aCoeff * val2;
-            testPoint->z += aCoeff * val3;
+            if (option == 1)
+            {
+              int num = (((j%height[1])*width[1])+i%width[1])*3;
+              double val1 = 2.0*(pixmapOrig[1][num++]/255.0)-1.0;
+              double val2 = 2.0*(pixmapOrig[1][num++]/255.0)-1.0;
+              double val3 = 2.0*(pixmapOrig[1][num]/255.0)-1.0;
+              testPoint->x += aCoeff * val1;
+              testPoint->y += aCoeff * val2;
+              testPoint->z += aCoeff * val3;
+            }
 
 
             gVector* npe = new gVector(testPoint->x-pe->x,testPoint->y-pe->y,testPoint->z-pe->z);
@@ -1142,6 +1145,16 @@ void applyRasterization(double aCoeff)
     }        
 }
 
+void updateCenter(int val)
+{
+  double angle = (val*3.1416)/180.0;
+  gVector rotationVector(spheres[0]->x-150.0, spheres[0]->y-250.0, spheres[0]->z+150.0);
+  rotateVector(rotationVector, angle);
+  spheres[0]->x = rotationVector.x + 150.0;
+  spheres[0]->y = rotationVector.y + 250.0;
+  spheres[0]->z = rotationVector.z -150.0;
+}
+
 // =============================================================================
 // main() Program Entry
 // =============================================================================
@@ -1149,18 +1162,34 @@ int main(int argc, char *argv[])
 {
   char texturePPM[100]="environment.ppm";
   readPPMFile(texturePPM, 0);
-  char textureFile[100]="texture.ppm";
-  readPPMFile(textureFile,1);
+  cout<<"1. Camera painting\n2. Motion\n";
+  int option;
+  cin>>option;
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
 
   initEnvironment();
-  for(double a =0; a<7.2; a+=0.1)
+  if (option ==1)
   {
-    cout<<a<<endl;
-    applyRasterization(a);
-    generatePPMFile(a);
+    char textureFile[100]="texture.ppm";
+    readPPMFile(textureFile,1);
+    for(double a =0; a<7.2; a+=0.1)
+    {
+      cout<<a<<endl;
+      applyRasterization(option, a);
+      generatePPMFile(a);
+    }
   }
 
+  else
+  {
+    for(int i=0;i<360;i+=5)
+    {
+      cout<<i<<endl;
+      updateCenter(5);
+      applyRasterization(option);
+      generatePPMFile(i/50.0);
+    }
+  }
 
   glutInit(&argc, argv);
   glutInitWindowPosition(100, 100); // Where the window will display on-screen.
