@@ -618,7 +618,7 @@ void generatePPMFile(double aIndex)
 {
   std::fstream ppmFile;
   char fileName[50];
-  string indexString = to_string((int)(aIndex*10.0));
+  string indexString = to_string((int)(roundf(aIndex*10.0)));
   strcpy(fileName,string("outputRasterConversion_"+indexString+".ppm").c_str());
   ppmFile.open(fileName,std::fstream::out);
   long int index=0;
@@ -1154,6 +1154,7 @@ int main(int argc, char *argv[])
   initEnvironment();
   for(double a =0; a<7.2; a++)
   {
+    cout<<a<<endl;
     applyRasterization(a);
     generatePPMFile(a+0.1);
   }
