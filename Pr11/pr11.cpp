@@ -1152,7 +1152,7 @@ int main(int argc, char *argv[])
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
 
   initEnvironment();
-  for(double a =0; a<7.2; a++)
+  for(double a =0; a<7.2; a+=0.1)
   {
     cout<<a<<endl;
     applyRasterization(a);
