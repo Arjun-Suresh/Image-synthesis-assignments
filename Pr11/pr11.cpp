@@ -1174,7 +1174,6 @@ int main(int argc, char *argv[])
     readPPMFile(textureFile,1);
     for(double a =0; a<7.2; a+=0.1)
     {
-      cout<<a<<endl;
       applyRasterization(option, a);
       generatePPMFile(a);
     }
@@ -1184,7 +1183,6 @@ int main(int argc, char *argv[])
   {
     for(int i=0;i<360;i+=5)
     {
-      cout<<i<<endl;
       updateCenter(5);
       applyRasterization(option);
       generatePPMFile(i/50.0);
