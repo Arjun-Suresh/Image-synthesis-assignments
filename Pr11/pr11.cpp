@@ -614,14 +614,18 @@ unsigned char* writePixelBufferToFileBuffer(unsigned char* fileBuffer, long int&
   return fileBuffer;
 }
 
-void generatePPMFile(double aIndex)
+void generatePPMFile(double aIndex, bool changed = false)
 {
   std::fstream ppmFile;
   char fileName[50];
   int num = (int)(roundf(aIndex*10.0));
   char ch = (char)(num/10+97);
   string indexString = string(1,ch)+to_string(num%10);
-  strcpy(fileName,string("outputRasterConversion_"+indexString+".ppm").c_str());
+  if (!changed)
+    strcpy(fileName,string("outputRasterConversion_"+indexString+".ppm").c_str());
+  else
+    strcpy(fileName,string("outputStereoConversion_"+indexString+".ppm").c_str());
+
   ppmFile.open(fileName,std::fstream::out);
   long int index=0;
   unsigned char* fileBuffer = new unsigned char[10000];
@@ -676,12 +680,19 @@ void clamp(double& value, double min, double max)
     value=max;
 }
 
-void initEnvironment()
+void initEnvironment(bool change=false)
 {
   d=50;
   n2 = new gVector(0,0,-1);
   n2->scalarMultiply(1.0/n2->length());
+  if(!change)
   pe = new point (250, 250, 150);
+  else
+  {
+    pe->x = 300;
+    pe->y =250;
+    pe->z =150;
+  }
   pc = new point (pe->x+(n2->x)*d,pe->y+(n2->y)*d,pe->z+(n2->z)*d);
   gVector* Vref = new gVector(0, 1, 2);
   Vref->scalarMultiply(((double)1)/Vref->length());
@@ -881,89 +892,6 @@ bool checkIntersection(double& tMin, gVector* npe, int& shape, point* start)
   return changedValue;
 }
 
-void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& blue, int shape, gVector* normalAdd = NULL, double* etaValue=NULL)
-{
-  double xCord, yCord;
-  if (shape != -1)
-  {
-    gVector p0h(hitPoint.x - spheres[0]->x, hitPoint.y - spheres[0]->y, hitPoint.z - spheres[0]->z);
-    p0h.scalarMultiply(1.0/(double)p0h.length());
-    gVector sphereN2(-1,0,0);
-    gVector sphereN1(0,1,0);
-    gVector sphereN0(0,0,1);
-    double z = sphereN2.dotProduct(p0h);
-    double y = sphereN1.dotProduct(p0h);
-    double x = sphereN0.dotProduct(p0h);
-    
-    xCord = acos(z);
-    double val = y/sin(xCord);
-    if (val < -1)
-      val=-1;
-    if (val>1)
-      val=1;
-    yCord = acos(val); 
-    if(x<0)
-      yCord = 3.14159 - yCord;
-    xCord = xCord/(3.14159);
-    yCord = yCord/(3.14159);
-  }
-  else
-  {
-    gVector sphereN2(-1,0,0);
-    gVector sphereN1(0,1,0);
-    gVector sphereN0(0,0,1);
-    double z = sphereN2.dotProduct(npe);
-    double y = sphereN1.dotProduct(npe);
-    double x = sphereN0.dotProduct(npe);
-    xCord = acos(z);
-    double val = y/sin(xCord);
-    if (val < -1)
-      val=-1;
-    if (val>1)
-      val=1;
-    yCord = acos(val);
-    if(x<0)
-      yCord = 3.14159 - yCord;
-    xCord = xCord/(3.14159);
-    yCord = yCord/(3.14159);
-  }
-  xCord=xCord*width[0];
-  yCord=yCord*height[0];
-  if (xCord<0)
-    xCord+=width[0];
-  if (yCord<0)
-    yCord+=height[0];
-  int iCord = round(xCord+0.5)-1;
-  int jCord = round(yCord+0.5)-1;
-  double u = xCord - (double)(iCord);
-  double v = yCord - (double)(jCord);
-  
-  jCord=height[0]-1-jCord;
-  int num1 = (((jCord%height[0])*width[0])+(iCord%width[0]))*3;
-  int red1=pixmapOrig[0][num1++];
-  int green1=pixmapOrig[0][num1++];
-  int blue1=pixmapOrig[0][num1];
-
-  int num2 = ((((jCord+1)%height[0])*width[0])+(iCord%width[0]))*3;
-  int red2=pixmapOrig[0][num2++];
-  int green2=pixmapOrig[0][num2++];
-  int blue2=pixmapOrig[0][num2];
-
-  int num3 = ((((jCord+1)%height[0])*width[0])+((iCord+1)%width[0]))*3;
-  int red3=pixmapOrig[0][num3++];
-  int green3=pixmapOrig[0][num3++];
-  int blue3=pixmapOrig[0][num3];
-
-  int num4 = (((jCord%height[0])*width[0])+((iCord+1)%width[0]))*3;
-  int red4=pixmapOrig[0][num4++];
-  int green4=pixmapOrig[0][num4++];
-  int blue4=pixmapOrig[0][num4];
-    
-  red = (1.0-u)*(1.0-v)*red1 + u*(1.0-v)*red4 + (1.0-u)*v*red2 + u*v*red3;
-  green = (1.0-u)*(1.0-v)*green1 + u*(1.0-v)*green4 + (1.0-u)*v*green2 + u*v*green3;
-  blue = (1.0-u)*(1.0-v)*blue1 + u*(1.0-v)*blue4 + (1.0-u)*v*blue2 + u*v*blue3;
-}
-
 void rotateVector(gVector& baseVector, double xAngle)
 {
   double rotationMatrix[4][4];
@@ -1001,6 +929,102 @@ void rotateVector(gVector& baseVector, double xAngle)
   baseVector.y = output[1][0];
   baseVector.z = output[2][0];
 }
+
+void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& blue, int shape, int angle=-1, gVector* normalAdd = NULL, double* etaValue=NULL)
+{
+  double xCord, yCord;
+  int index;
+  if (shape != -1)
+  {
+    index=1;
+    gVector p0h(hitPoint.x - spheres[0]->x, hitPoint.y - spheres[0]->y, hitPoint.z - spheres[0]->z);
+    p0h.scalarMultiply(1.0/(double)p0h.length());
+    gVector sphereN2(-1,0,0);
+    gVector sphereN1(0,1,0);
+    gVector sphereN0(0,0,1);
+
+    if(angle != -1)
+    {
+      double xAngle = (float)((angle*4)%360)*3.1416/180.0;
+      rotateVector(sphereN0, xAngle);
+      rotateVector(sphereN1, xAngle);
+      rotateVector(sphereN2, xAngle);
+    }
+    double z = sphereN2.dotProduct(p0h);
+    double y = sphereN1.dotProduct(p0h);
+    double x = sphereN0.dotProduct(p0h);
+    
+    xCord = acos(z);
+    double val = y/sin(xCord);
+    if (val < -1)
+      val=-1;
+    if (val>1)
+      val=1;
+    yCord = acos(val); 
+    if(x<0)
+      yCord = 3.14159 - yCord;
+    xCord = xCord/(3.14159);
+    yCord = yCord/(3.14159);
+  }
+  else
+  {
+    index=0;
+    gVector sphereN2(-1,0,0);
+    gVector sphereN1(0,1,0);
+    gVector sphereN0(0,0,1);
+    double z = sphereN2.dotProduct(npe);
+    double y = sphereN1.dotProduct(npe);
+    double x = sphereN0.dotProduct(npe);
+    xCord = acos(z);
+    double val = y/sin(xCord);
+    if (val < -1)
+      val=-1;
+    if (val>1)
+      val=1;
+    yCord = acos(val);
+    if(x<0)
+      yCord = 3.14159 - yCord;
+    xCord = xCord/(3.14159);
+    yCord = yCord/(3.14159);
+  }
+  xCord=xCord*width[index];
+  yCord=yCord*height[index];
+  if (xCord<0)
+    xCord+=width[index];
+  if (yCord<0)
+    yCord+=height[index];
+  int iCord = round(xCord+0.5)-1;
+  int jCord = round(yCord+0.5)-1;
+  double u = xCord - (double)(iCord);
+  double v = yCord - (double)(jCord);
+  
+  jCord=height[index]-1-jCord;
+  int num1 = (((jCord%height[index])*width[index])+(iCord%width[index]))*3;
+  int red1=pixmapOrig[index][num1++];
+  int green1=pixmapOrig[index][num1++];
+  int blue1=pixmapOrig[index][num1];
+
+  int num2 = ((((jCord+1)%height[index])*width[index])+(iCord%width[index]))*3;
+  int red2=pixmapOrig[index][num2++];
+  int green2=pixmapOrig[index][num2++];
+  int blue2=pixmapOrig[index][num2];
+
+  int num3 = ((((jCord+1)%height[index])*width[index])+((iCord+1)%width[index]))*3;
+  int red3=pixmapOrig[index][num3++];
+  int green3=pixmapOrig[index][num3++];
+  int blue3=pixmapOrig[index][num3];
+
+  int num4 = (((jCord%height[index])*width[index])+((iCord+1)%width[index]))*3;
+  int red4=pixmapOrig[index][num4++];
+  int green4=pixmapOrig[index][num4++];
+  int blue4=pixmapOrig[index][num4];
+    
+  red = (1.0-u)*(1.0-v)*red1 + u*(1.0-v)*red4 + (1.0-u)*v*red2 + u*v*red3;
+  green = (1.0-u)*(1.0-v)*green1 + u*(1.0-v)*green4 + (1.0-u)*v*green2 + u*v*green3;
+  blue = (1.0-u)*(1.0-v)*blue1 + u*(1.0-v)*blue4 + (1.0-u)*v*blue2 + u*v*blue3;
+}
+
+
 
 void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& green, double& blue, point& hitPoint, gVector& normal, gVector& incident, int recursionCount, double eta)
 {
@@ -1054,7 +1078,7 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
   }
 }
 
-void applyRasterization(int option, double aCoeff=0)
+void applyRasterization(int option, int iVal=-1, double aCoeff=0)
 {
   initLight();
   color lightColor(10,10,10,10);
@@ -1111,10 +1135,12 @@ void applyRasterization(int option, double aCoeff=0)
               double etaValue;
               etaValue = glassIndex;
               nh.scalarMultiply(1.0/nh.length());
-              getTransmittedColor(npe, shape, red, green, blue, hitPoint, nh, *npe, 0, etaValue);
-              int rVal = red * 255;
+              //getTransmittedColor(npe, shape, red, green, blue, hitPoint, nh, *npe, 0, etaValue);
+              int rVal, gVal, bVal;
+              environmentColor(hitPoint, *npe, rVal, gVal, bVal, 0, iVal);
+              /*int rVal = red * 255;
               int gVal = green * 255;
-              int bVal = blue * 255;
+              int bVal = blue * 255;*/
               ambient.setColor(rVal, gVal, bVal, 255);
               getColor(ambient, lightColor, nh, *npe, hitPoint);
               ambient.getResult(red, green, blue);
@@ -1162,7 +1188,9 @@ int main(int argc, char *argv[])
 {
   char texturePPM[100]="environment.ppm";
   readPPMFile(texturePPM, 0);
-  cout<<"1. Camera painting\n2. Motion\n";
+  char speherePPM[100]="texture.ppm";
+  readPPMFile(speherePPM, 1);
+  cout<<"1. Camera painting\n2. Motion\n3. Stereo\n";
   int option;
   cin>>option;
   pixmapComputed = new unsigned char[widthComputed * heightComputed * 3];
@@ -1179,13 +1207,30 @@ int main(int argc, char *argv[])
     }
   }
 
-  else
+  else if (option ==2)
   {
     for(int i=0;i<360;i+=5)
     {
       updateCenter(5);
       applyRasterization(option);
       generatePPMFile(i/50.0);
+    }
+  }
+
+  else
+  {
+    for(int i=0;i<360;i+=5)
+    {
+      updateCenter(5);
+      applyRasterization(option, i);
+      generatePPMFile(i/50.0);
+    }
+    initEnvironment(true);
+    for(int i=0;i<360;i+=5)
+    {
+      updateCenter(5);
+      applyRasterization(option, i);
+      generatePPMFile(i/50.0, true);
     }
   }
 
