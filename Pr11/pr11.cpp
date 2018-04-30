@@ -1219,12 +1219,13 @@ int main(int argc, char *argv[])
 
   else
   {
+    initEnvironment(true);
     for(int i=0;i<360;i+=5)
     {
       cout<<i<<endl;
       updateCenter(5);
       applyRasterization(option, i);
-      generatePPMFile(i/50.0);
+      generatePPMFile(i/50.0,true);
     }
     
   }
