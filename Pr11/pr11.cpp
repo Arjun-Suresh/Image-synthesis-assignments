@@ -1221,17 +1221,12 @@ int main(int argc, char *argv[])
   {
     for(int i=0;i<360;i+=5)
     {
+      cout<<i<<endl;
       updateCenter(5);
       applyRasterization(option, i);
       generatePPMFile(i/50.0);
     }
-    initEnvironment(true);
-    for(int i=0;i<360;i+=5)
-    {
-      updateCenter(5);
-      applyRasterization(option, i);
-      generatePPMFile(i/50.0, true);
-    }
+    
   }
 
   glutInit(&argc, argv);
