@@ -1171,14 +1171,16 @@ void applyRasterization(int option, int iVal=-1, double aCoeff=0)
     }        
 }
 
-void updateCenter(int val)
+void updateCenter(double val)
 {
   double angle = (val*3.1416)/180.0;
-  gVector rotationVector(spheres[0]->x-150.0, spheres[0]->y-250.0, spheres[0]->z+150.0);
+  /*gVector rotationVector(spheres[0]->x-150.0, spheres[0]->y-250.0, spheres[0]->z+150.0);
   rotateVector(rotationVector, angle);
   spheres[0]->x = rotationVector.x + 150.0;
   spheres[0]->y = rotationVector.y + 250.0;
-  spheres[0]->z = rotationVector.z -150.0;
+  spheres[0]->z = rotationVector.z -150.0;*/
+  spheres[0]->z +=val;
+  spheres[0]->y += sin(angle)*100.0;
 }
 
 // =============================================================================
@@ -1209,11 +1211,16 @@ int main(int argc, char *argv[])
 
   else if (option ==2)
   {
-    for(int i=0;i<360;i+=5)
+    double a=0;
+    for(double i=0;i<540;i+=7.5)
     {
-      updateCenter(5);
-      applyRasterization(option);
-      generatePPMFile(i/50.0);
+      updateCenter(i);
+      applyRasterization(1,a);
+      generatePPMFile(i/75.0);
+      a+=0.4;
+      spheres[0]->x = 150.0;
+      spheres[0]->y = 250.0;
+      spheres[0]->z = -100.0;
     }
   }
 
