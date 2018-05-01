@@ -930,7 +930,7 @@ void rotateVector(gVector& baseVector, double xAngle)
   baseVector.z = output[2][0];
 }
 
-void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& blue, int shape, int angle=-1, gVector* normalAdd = NULL, double* etaValue=NULL)
+void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& blue, int shape, double angle=-1, gVector* normalAdd = NULL, double* etaValue=NULL)
 {
   double xCord, yCord;
   int index;
@@ -945,7 +945,7 @@ void environmentColor(point& hitPoint, gVector& npe, int& red, int& green, int& 
 
     if(angle != -1)
     {
-      double xAngle = (float)((angle*4)%360)*3.1416/180.0;
+      double xAngle = (angle*4.0)*3.1416/180.0;
       rotateVector(sphereN0, xAngle);
       rotateVector(sphereN1, xAngle);
       rotateVector(sphereN2, xAngle);
@@ -1078,7 +1078,7 @@ void getTransmittedColor(gVector* npe, int shapeIncoming, double& red, double& g
   }
 }
 
-void applyRasterization(int option, int iVal=-1, double aCoeff=0)
+void applyRasterization(int option, double iVal=-1, double aCoeff=0)
 {
   initLight();
   color lightColor(10,10,10,10);
@@ -1107,10 +1107,10 @@ void applyRasterization(int option, int iVal=-1, double aCoeff=0)
             
             if (option == 1)
             {
-              int num = (((j%height[1])*width[1])+i%width[1])*3;
-              double val1 = 2.0*(pixmapOrig[1][num++]/255.0)-1.0;
-              double val2 = 2.0*(pixmapOrig[1][num++]/255.0)-1.0;
-              double val3 = 2.0*(pixmapOrig[1][num]/255.0)-1.0;
+              int num = (((j%height[2])*width[2])+i%width[2])*3;
+              double val1 = 2.0*(pixmapOrig[2][num++]/255.0)-1.0;
+              double val2 = 2.0*(pixmapOrig[2][num++]/255.0)-1.0;
+              double val3 = 2.0*(pixmapOrig[2][num]/255.0)-1.0;
               testPoint->x += aCoeff * val1;
               testPoint->y += aCoeff * val2;
               testPoint->z += aCoeff * val3;
@@ -1179,8 +1179,8 @@ void updateCenter(double val)
   spheres[0]->x = rotationVector.x + 150.0;
   spheres[0]->y = rotationVector.y + 250.0;
   spheres[0]->z = rotationVector.z -150.0;*/
-  spheres[0]->z +=val;
-  spheres[0]->y += sin(angle)*100.0;
+  spheres[0]->z -=val;
+  spheres[0]->y += sin(angle)*200.0;
 }
 
 // =============================================================================
@@ -1192,6 +1192,8 @@ int main(int argc, char *argv[])
   readPPMFile(texturePPM, 0);
   char speherePPM[100]="texture.ppm";
   readPPMFile(speherePPM, 1);
+  char paintingPPM[100]="painting.ppm";
+  readPPMFile(paintingPPM, 2);
   cout<<"1. Camera painting\n2. Motion\n3. Stereo\n";
   int option;
   cin>>option;
@@ -1215,7 +1217,7 @@ int main(int argc, char *argv[])
     for(double i=0;i<540;i+=7.5)
     {
       updateCenter(i);
-      applyRasterization(1,a);
+      applyRasterization(1,i,a);
       generatePPMFile(i/75.0);
       a+=0.4;
       spheres[0]->x = 150.0;
